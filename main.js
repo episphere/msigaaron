@@ -1,6 +1,10 @@
 import * as localforage from "https://cdn.jsdelivr.net/npm/localforage/+esm";
 import * as pako from "https://cdn.jsdelivr.net/npm/pako/+esm";
 import * as Papa from "https://cdn.jsdelivr.net/npm/papaparse/+esm";
+// import * as Plotly from "./scripts/dependencies/plotly.js";
+//import Plotly as an es6 module 
+import * as Plotly from "https://cdn.jsdelivr.net/npm/plotly.js-dist/+esm";
+
 
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
@@ -91,9 +95,11 @@ const mSigSDK = (function () {
   //#region Mutational Spectrum
   async function getMutationalSpectrumOptions(
     study = "PCAWG",
+    genomeDataType = "WGS",
+    cancerType = "Lung-AdenoCA",
     numberOfResults = 10
   ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum_options?study=${study}&offset=0&limit=${numberOfResults}`;
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum_options?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&offset=0&limit=${numberOfResults}`;
     const cacheName = "getMutationalSpectrumOptions";
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
@@ -250,15 +256,14 @@ const mSigSDK = (function () {
   }
   function tsvParseRows(tsvData) {
     // Split the TSV data into rows
-    const rows = tsvData.trim().split('\n');
+    const rows = tsvData.trim().split("\n");
 
     // Map each row to an array of cells
-    const cells = rows.map(row => row.split('\t'));
+    const cells = rows.map((row) => row.split("\t"));
 
     // Return the cells
     return cells;
   }
-
 
   async function retrieveData(download_id, project, dataset, analysis_type) {
     // Create the URL that we will use to fetch the data
@@ -618,8 +623,9 @@ initialized to zeros.
     };
     let purines = "AG";
     if (purines.includes(trinucleotide_ref[1])) {
-      return `${complement_seq[trinucleotide_ref[2]]}${complement_seq[trinucleotide_ref[1]]
-        }${complement_seq[trinucleotide_ref[0]]}`;
+      return `${complement_seq[trinucleotide_ref[2]]}${
+        complement_seq[trinucleotide_ref[1]]
+      }${complement_seq[trinucleotide_ref[0]]}`;
     } else {
       return trinucleotide_ref;
     }
@@ -723,20 +729,20 @@ initialized to zeros.
         filteredRow = panelArray.filter(
           (panelRow) =>
             parseInt(panelRow["Chromosome"]) ===
-            parseInt(row[getMAFColumnByValue("chromosome")]) &&
+              parseInt(row[getMAFColumnByValue("chromosome")]) &&
             parseInt(panelRow["Start_Position"]) <=
-            parseInt(row[getMAFColumnByValue("chromosome_start")]) &&
+              parseInt(row[getMAFColumnByValue("chromosome_start")]) &&
             parseInt(panelRow["End_Position"]) >=
-            parseInt(row[getMAFColumnByValue("chromosome_end")])
+              parseInt(row[getMAFColumnByValue("chromosome_end")])
         );
       } else {
         filteredRow = panelArray.filter(
           (panelRow) =>
             panelRow["Chromosome"] === row[getMAFColumnByValue("chromosome")] &&
             parseInt(panelRow["Start_Position"]) <=
-            parseInt(row[getMAFColumnByValue("chromosome_start")]) &&
+              parseInt(row[getMAFColumnByValue("chromosome_start")]) &&
             parseInt(panelRow["End_Position"]) >=
-            parseInt(row[getMAFColumnByValue("chromosome_end")])
+              parseInt(row[getMAFColumnByValue("chromosome_end")])
         );
       }
 
@@ -773,10 +779,7 @@ initialized to zeros.
     });
   }
 
-
-
   async function convertWGStoPanel(WgMAFs, panelDf) {
-
     // Check if the panel file is an array of arrays or a file path. If it is a file path, read the file and convert it to an array of arrays
     let bed_file;
     if (typeof panelDf === "string") {
@@ -789,15 +792,82 @@ initialized to zeros.
     for (let WgMAF of WgMAFs) {
       const downsampledWGSMAF = downsampleWGSArray(WgMAF, bed_file);
       panelMAFs.push(downsampledWGSMAF);
-
-
     }
     return panelMAFs;
   }
   //#endregion
 
+  //#region Plot the summary of a dataset
+
+
+  async function plotProfilerSummary(
+    studyName = "PCAWG",
+    genomeDataType = "WGS",
+    cancerTypeOrGroup = "Lung-AdenoCA",
+    numberOfResults = 50
+  ) {
+    getMutationalSpectrumOptions(
+      studyName,
+      genomeDataType,
+      cancerTypeOrGroup,
+      numberOfResults
+    ).then((options) => {
+      getMutationalSpectrumSummary(
+        studyName,
+        genomeDataType,
+        cancerTypeOrGroup,
+        numberOfResults
+      ).then((summary) => {
+        let data = [];
+        for (let i = 0; i < summary.length; i++) {
+        // check if data already has a dictionary of name summary[i]["sample"] and if it doesn't, add it
+          if (!data.some((e) => e.name === summary[i]["profile"])) {
+
+            data.push({
+              x: [summary[i]["sample"]],
+              y: [summary[i]["logTotalMutations"]],
+              type: "bar",
+              name: summary[i]["profile"],
+              marker: {
+                color: summary[i].color,
+              },
+            });
+
+          }else{
+            // if the data already has a dictionary of name summary[i]["sample"], add the new data to the existing dictionary
+            let existingData = data.find((e) => e.name === summary[i]["profile"]);
+            existingData.x.push(summary[i]["sample"]);
+            existingData.y.push(summary[i]["logTotalMutations"]);
+          }
+        }
+
+        let layout = {
+          title: `${studyName} ${cancerTypeOrGroup} ${genomeDataType} Mutational Spectrum Summary`,
+          xaxis: {
+            title: "Mutation Type",
+          },
+          yaxis: {
+            title: "Log (Number of Mutations)",
+          },
+          barmode:'stack'
+        };
+        let plotDiv = document.createElement("div");
+        plotDiv.setAttribute("id", "mutationalSpectrumSummary");
+        Plotly.default.newPlot(
+          "mutationalSpectrumSummary",
+          data,
+          layout,
+          options
+        );
+      });
+    });
+  }
+
+  //#endregion
+
+
   //#region Define the public members of the mSigSDK
-  const mSigPortal = {
+  const mSigPortalData = {
     getMutationalSignaturesOptions,
     getMutationalSignaturesData,
     getMutationalSignaturesSummary,
@@ -812,6 +882,16 @@ initialized to zeros.
     getMutationalSignatureEtiologyOptions,
     getMutationalSignatureEtiologyData,
   };
+  const mSigPortalPlots = {
+    plotProfilerSummary,
+
+  }
+
+  const mSigPortal = {
+    mSigPortalData,
+    mSigPortalPlots,
+  }
+
   const ICGC = {
     obtainICGCDataMAF,
     convertMatrix,
@@ -819,16 +899,6 @@ initialized to zeros.
   };
 
   //#endregion
-
-  //#region Plot the summary of a dataset
-
-  async function plotProfilerSummary(studyName, cancerTypeOrGroup, genomeDataType) { 
-
-
-  }
-
-  //#endregion
-
 
   // Public members
   return {
