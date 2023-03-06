@@ -340,7 +340,7 @@ const mSigSDK = (function () {
       });
   }
   async function retrieveICGCDatasets(
-    projects = ["BRCA-UK"],
+    projects = ["BRCA-US"],
     datatype = "ssm",
     analysis_type = "WGS",
     output_format = "TSV"
@@ -823,9 +823,9 @@ async function plotProfilerSummary(
     );
     let data = await getBarPlotData(summary);
     if (data.length == 0){
-      $("#mutationalSpectrumSummary").html(
-        `<p style="color:red">Error: no data available for the selected parameters.</p>`
-      );
+      // $(`#${divID}`).html(
+      //   `<p style="color:red">Error: no data available for the selected parameters.</p>`
+      // );
     }else{
       let layout = {
         title: `${studyName} ${cancerTypeOrGroup} ${genomeDataType} Mutational Spectrum Summary`,
