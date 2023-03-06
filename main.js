@@ -2,9 +2,8 @@ import * as localforage from "https://cdn.jsdelivr.net/npm/localforage/+esm";
 import * as pako from "https://cdn.jsdelivr.net/npm/pako/+esm";
 import * as Papa from "https://cdn.jsdelivr.net/npm/papaparse/+esm";
 // import * as Plotly from "./scripts/dependencies/plotly.js";
-//import Plotly as an es6 module 
+//import Plotly as an es6 module
 import * as Plotly from "https://cdn.jsdelivr.net/npm/plotly.js-dist/+esm";
-
 
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
@@ -110,7 +109,7 @@ const mSigSDK = (function () {
     genomeDataType = "WGS",
     cancerType = "Lung-AdenoCA",
     mutationType = "SBS",
-    matrixSize = 96,
+    matrixSize = 96
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&sample=${sample}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
     const cacheName = "getMutationalSpectrumData";
@@ -799,125 +798,131 @@ initialized to zeros.
 
   //#region Plot the summary of a dataset
 
-
-// This function plots the mutational spectrum summary for the given parameters.
-// Input:
-// - studyName: Name of the study for which the data is to be fetched
-// - genomeDataType: Type of the genome data to be fetched
-// - cancerTypeOrGroup: Cancer type or group for which the data is to be fetched
-// - numberOfResults: Number of results to be fetched
-// Output: A mutational spectrum summary plot of the given parameters
-async function plotProfilerSummary(
-  studyName = "PCAWG",
-  genomeDataType = "WGS",
-  cancerTypeOrGroup = "Lung-AdenoCA",
-  numberOfResults = 50,
-  divID = "mutationalSpectrumSummary"
-) {
-  try {
-    const summary = await getMutationalSpectrumSummary(
-      studyName,
-      genomeDataType,
-      cancerTypeOrGroup,
-      numberOfResults
-    );
-    let data = await getBarPlotData(summary);
-    if (data.length == 0){
-      // $(`#${divID}`).html(
-      //   `<p style="color:red">Error: no data available for the selected parameters.</p>`
-      // );
-    }else{
-      let layout = {
-        title: `${studyName} ${cancerTypeOrGroup} ${genomeDataType} Mutational Spectrum Summary`,
-        xaxis: {
-          title: "Sample",
-        },
-        yaxis: {
-          title: "Log (Number of Mutations)",
-        },
-        barmode: "stack",
-      };
-      Plotly.default.newPlot(divID, data, layout);
-    }
-  } catch (err) {
-    console.error(err);
-    $(`#${divID}`).html(
-      `<p>Error: ${err.message}</p>`
-    );
-  }
-}
-
-async function getBarPlotData(summary){
-  let data = [];
-  for (let i = 0; i < summary.length; i++) {
-    if (
-      !data.some(
-        (e) => e.name === summary[i]["profile"] + `: ${summary[i]["matrix"]}`
-      )
-    ) {
-      data.push({
-        x: [summary[i]["sample"]],
-        y: [summary[i]["logTotalMutations"]],
-        text: [parseInt(summary[i]["meanTotalMutations"])],
-        type: "bar",
-        name: summary[i]["profile"] + `: ${summary[i]["matrix"]}`,
-        marker: {
-          color: summary[i].color,
-        },
-      });
-    } else {
-      let existingData = data.find(
-        (e) => e.name === summary[i]["profile"] + `: ${summary[i]["matrix"]}`
+  // This function plots the mutational spectrum summary for the given parameters.
+  // Input:
+  // - studyName: Name of the study for which the data is to be fetched
+  // - genomeDataType: Type of the genome data to be fetched
+  // - cancerTypeOrGroup: Cancer type or group for which the data is to be fetched
+  // - numberOfResults: Number of results to be fetched
+  // Output: A mutational spectrum summary plot of the given parameters
+  async function plotProfilerSummary(
+    studyName = "PCAWG",
+    genomeDataType = "WGS",
+    cancerTypeOrGroup = "Lung-AdenoCA",
+    numberOfResults = 50,
+    divID = "mutationalSpectrumSummary"
+  ) {
+    try {
+      const summary = await getMutationalSpectrumSummary(
+        studyName,
+        genomeDataType,
+        cancerTypeOrGroup,
+        numberOfResults
       );
-      existingData.x.push(summary[i]["sample"]);
-      existingData.y.push(summary[i]["logTotalMutations"]);
-      existingData.text.push(parseInt(summary[i]["meanTotalMutations"]));
+      let data = await getBarPlotData(summary);
+      if (data.length == 0) {
+        // $(`#${divID}`).html(
+        //   `<p style="color:red">Error: no data available for the selected parameters.</p>`
+        // );
+      } else {
+        let layout = {
+          title: `${studyName} ${cancerTypeOrGroup} ${genomeDataType} Mutational Spectrum Summary`,
+          xaxis: {
+            title: "Sample",
+          },
+          yaxis: {
+            title: "Log (Number of Mutations)",
+          },
+          barmode: "stack",
+        };
+        Plotly.default.newPlot(divID, data, layout);
+      }
+    } catch (err) {
+      console.error(err);
+      $(`#${divID}`).html(`<p>Error: ${err.message}</p>`);
     }
   }
-  return data;
-}
+
+  async function getBarPlotData(summary) {
+    let data = [];
+    for (let i = 0; i < summary.length; i++) {
+      if (
+        !data.some(
+          (e) => e.name === summary[i]["profile"] + `: ${summary[i]["matrix"]}`
+        )
+      ) {
+        data.push({
+          x: [summary[i]["sample"]],
+          y: [summary[i]["logTotalMutations"]],
+          text: [parseInt(summary[i]["meanTotalMutations"])],
+          type: "bar",
+          name: summary[i]["profile"] + `: ${summary[i]["matrix"]}`,
+          marker: {
+            color: summary[i].color,
+          },
+        });
+      } else {
+        let existingData = data.find(
+          (e) => e.name === summary[i]["profile"] + `: ${summary[i]["matrix"]}`
+        );
+        existingData.x.push(summary[i]["sample"]);
+        existingData.y.push(summary[i]["logTotalMutations"]);
+        existingData.text.push(parseInt(summary[i]["meanTotalMutations"]));
+      }
+    }
+    return data;
+  }
 
   //#endregion
 
   //#region Plot a patient's mutational spectra
-  
+
   // This function plots the mutational spectrum for the given parameters.
-    async function plotPatientMutationalSpectrum(
-        studyName = "PCAWG",
-        sample = "SP50263",
-        genomeDataType = "WGS",
-        cancerType = "Lung-AdenoCA",
-        mutationType = "SBS",
-        matrixSize = 96,
-        divID = "mutationalSpectrumMatrix"
-        ){
+  async function plotPatientMutationalSpectrum(
+    studyName = "PCAWG",
+    sample = "SP50263",
+    genomeDataType = "WGS",
+    cancerType = "Lung-AdenoCA",
+    mutationType = "SBS",
+    matrixSize = 96,
+    divID = "mutationalSpectrumMatrix"
+  ) {
+    let data = await getMutationalSpectrumData(
+      studyName,
+      sample,
+      genomeDataType,
+      cancerType,
+      mutationType,
+      matrixSize
+    );
 
-        let data = await getMutationalSpectrumData(studyName, sample, genomeDataType, cancerType, mutationType, matrixSize);
+    let plotlyData = await formatMutationalSpectraData(
+      data,
+      matrixSize,
+      sample
+    );
 
-        let plotlyData = await formatMutationalSpectraData(data, matrixSize, sample);
-
-        if (data.length == 0){
-            $(`#${divID}`).html(
-                `<p style="color:red">Error: no data available for the selected parameters.</p>`
-            );
-        }else{
-            let layout = {
-                title: `${studyName} ${sample} ${genomeDataType} Mutational Spectrum`,
-                xaxis: {
-                    title: "Mutation Type",
-                    type:'category',
-                },
-                yaxis: {
-                    title: "Number of Single Base Substitutions",
-                },
-                barmode: 'group',
-            };
-            Plotly.default.newPlot(divID, plotlyData, layout);
-        }
-
+    if (data.length == 0) {
+      $(`#${divID}`).html(
+        `<p style="color:red">Error: no data available for the selected parameters.</p>`
+      );
+    } else {
+      let layout = {
+        title: `${studyName} ${genomeDataType} Mutational Spectrum for Sample: ${sample}`,
+        xaxis: {
+          title: "Mutation Type",
+          type: "category",
+        },
+        yaxis: {
+          title: "Number of Single Base Substitutions",
+        },
+        barmode: "group",
+      };
+      Plotly.default.newPlot(divID, plotlyData, layout);
     }
+  }
 
-     // This converts the mutational spectra data to a format that can be used to create a plotly chart
+  // This converts the mutational spectra data to a format that can be used to create a plotly chart
   // It takes in the mutational spectra data, the matrix size, and the sample
   // It returns the data in a format that can be used to create a plotly chart
   // The data is an array of objects. Each object has a name, x, y, and type property.
@@ -926,43 +931,47 @@ async function getBarPlotData(summary){
   // The y property is an array of the mutation frequencies
   // The type property is the type of substitution that takes place
 
- async function formatMutationalSpectraData(
-      mutationalSpectra,
-      matrixSize,
-      sample
-    ) {
-      if (matrixSize == 96) {
-        let mutationalSpectrum = init_sbs_mutational_spectra();
+  async function formatMutationalSpectraData(
+    mutationalSpectra,
+    matrixSize,
+    sample
+  ) {
+    if (matrixSize == 96) {
+      let mutationalSpectrum = init_sbs_mutational_spectra();
 
-        for (let i = 0; i < mutationalSpectra.length; i++) {
-          let mutationType = mutationalSpectra[i]["mutationType"];
-          mutationalSpectrum[mutationType] = mutationalSpectra[i]["mutations"];
-        }
-
-        const substitutionTypes = ["C>A", "C>G", "C>T", "T>A", "T>C", "T>G"];
-
-        const data = substitutionTypes.map((substitutionType) => {return {'name': substitutionType, 'x':[], y:[],type:'bar'}});
-
-        substitutionTypes.forEach((substitutionType) => {
-          Object.keys(mutationalSpectrum)
-            .filter((key) => {
-              return key.includes(substitutionType);
-            })
-            .forEach((key) => {
-              data.find((e) => e.name === substitutionType).x.push(key);
-              data.find((e) => e.name === substitutionType).y.push(mutationalSpectrum[key]);
-            });
-        });
-
-        return data;
-      } else if (matrixSize == 192) {
-        console.error("Not supported yet");
-      } else if (matrixSize == 1536) {
-        console.error("Not supported yet");
-      } else {
-        console.error("Invalid Matrix Size");
+      for (let i = 0; i < mutationalSpectra.length; i++) {
+        let mutationType = mutationalSpectra[i]["mutationType"];
+        mutationalSpectrum[mutationType] = mutationalSpectra[i]["mutations"];
       }
+
+      const substitutionTypes = ["C>A", "C>G", "C>T", "T>A", "T>C", "T>G"];
+
+      const data = substitutionTypes.map((substitutionType) => {
+        return { name: substitutionType, x: [], y: [], type: "bar" };
+      });
+
+      substitutionTypes.forEach((substitutionType) => {
+        Object.keys(mutationalSpectrum)
+          .filter((key) => {
+            return key.includes(substitutionType);
+          })
+          .forEach((key) => {
+            data.find((e) => e.name === substitutionType).x.push(key);
+            data
+              .find((e) => e.name === substitutionType)
+              .y.push(mutationalSpectrum[key]);
+          });
+      });
+
+      return data;
+    } else if (matrixSize == 192) {
+      console.error("Not supported yet");
+    } else if (matrixSize == 1536) {
+      console.error("Not supported yet");
+    } else {
+      console.error("Invalid Matrix Size");
     }
+  }
 
   //#endregion
 
@@ -984,13 +993,13 @@ async function getBarPlotData(summary){
   };
   const mSigPortalPlots = {
     plotProfilerSummary,
-    plotPatientMutationalSpectrum
-  }
+    plotPatientMutationalSpectrum,
+  };
 
   const mSigPortal = {
     mSigPortalData,
     mSigPortalPlots,
-  }
+  };
 
   const ICGC = {
     obtainICGCDataMAF,
