@@ -806,12 +806,7 @@ initialized to zeros.
     cancerTypeOrGroup = "Lung-AdenoCA",
     numberOfResults = 50
   ) {
-    getMutationalSpectrumOptions(
-      studyName,
-      genomeDataType,
-      cancerTypeOrGroup,
-      numberOfResults
-    ).then((options) => {
+    
       getMutationalSpectrumSummary(
         studyName,
         genomeDataType,
@@ -821,13 +816,14 @@ initialized to zeros.
         let data = [];
         for (let i = 0; i < summary.length; i++) {
         // check if data already has a dictionary of name summary[i]["sample"] and if it doesn't, add it
-          if (!data.some((e) => e.name === summary[i]["profile"])) {
+          if (!data.some((e) => e.name === summary[i]["profile"]+ `: ${summary[i]["matrix"]}`)) {
 
             data.push({
               x: [summary[i]["sample"]],
               y: [summary[i]["logTotalMutations"]],
+              text: [parseInt(summary[i]["meanTotalMutations"])],
               type: "bar",
-              name: summary[i]["profile"],
+              name: summary[i]["profile"]+ `: ${summary[i]["matrix"]}`,
               marker: {
                 color: summary[i].color,
               },
@@ -835,9 +831,10 @@ initialized to zeros.
 
           }else{
             // if the data already has a dictionary of name summary[i]["sample"], add the new data to the existing dictionary
-            let existingData = data.find((e) => e.name === summary[i]["profile"]);
+            let existingData = data.find((e) => e.name === summary[i]["profile"]+ `: ${summary[i]["matrix"]}`);
             existingData.x.push(summary[i]["sample"]);
             existingData.y.push(summary[i]["logTotalMutations"]);
+            existingData.text.push(parseInt(summary[i]["meanTotalMutations"]));
           }
         }
 
@@ -851,16 +848,17 @@ initialized to zeros.
           },
           barmode:'stack'
         };
+
+
         let plotDiv = document.createElement("div");
         plotDiv.setAttribute("id", "mutationalSpectrumSummary");
         Plotly.default.newPlot(
           "mutationalSpectrumSummary",
           data,
-          layout,
-          options
+          layout
         );
       });
-    });
+    
   }
 
   //#endregion
