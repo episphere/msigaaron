@@ -799,67 +799,82 @@ initialized to zeros.
 
   //#region Plot the summary of a dataset
 
-
-  async function plotProfilerSummary(
-    studyName = "PCAWG",
-    genomeDataType = "WGS",
-    cancerTypeOrGroup = "Lung-AdenoCA",
-    numberOfResults = 50
-  ) {
-    
-      getMutationalSpectrumSummary(
-        studyName,
-        genomeDataType,
-        cancerTypeOrGroup,
-        numberOfResults
-      ).then((summary) => {
-        let data = [];
-        for (let i = 0; i < summary.length; i++) {
-        // check if data already has a dictionary of name summary[i]["sample"] and if it doesn't, add it
-          if (!data.some((e) => e.name === summary[i]["profile"]+ `: ${summary[i]["matrix"]}`)) {
-
-            data.push({
-              x: [summary[i]["sample"]],
-              y: [summary[i]["logTotalMutations"]],
-              text: [parseInt(summary[i]["meanTotalMutations"])],
-              type: "bar",
-              name: summary[i]["profile"]+ `: ${summary[i]["matrix"]}`,
-              marker: {
-                color: summary[i].color,
-              },
-            });
-
-          }else{
-            // if the data already has a dictionary of name summary[i]["sample"], add the new data to the existing dictionary
-            let existingData = data.find((e) => e.name === summary[i]["profile"]+ `: ${summary[i]["matrix"]}`);
-            existingData.x.push(summary[i]["sample"]);
-            existingData.y.push(summary[i]["logTotalMutations"]);
-            existingData.text.push(parseInt(summary[i]["meanTotalMutations"]));
-          }
-        }
-
-        let layout = {
-          title: `${studyName} ${cancerTypeOrGroup} ${genomeDataType} Mutational Spectrum Summary`,
-          xaxis: {
-            title: "Mutation Type",
-          },
-          yaxis: {
-            title: "Log (Number of Mutations)",
-          },
-          barmode:'stack'
-        };
-
-
-        let plotDiv = document.createElement("div");
-        plotDiv.setAttribute("id", "mutationalSpectrumSummary");
-        Plotly.default.newPlot(
-          "mutationalSpectrumSummary",
-          data,
-          layout
-        );
-      });
-    
+  
+// This function plots the mutational spectrum summary for the given parameters.
+// Input:
+// - studyName: Name of the study for which the data is to be fetched
+// - genomeDataType: Type of the genome data to be fetched
+// - cancerTypeOrGroup: Cancer type or group for which the data is to be fetched
+// - numberOfResults: Number of results to be fetched
+// Output: A mutational spectrum summary plot of the given parameters
+async function plotProfilerSummary(
+  studyName = "PCAWG",
+  genomeDataType = "WGS",
+  cancerTypeOrGroup = "Lung-AdenoCA",
+  numberOfResults = 50
+) {
+  try {
+    const summary = await getMutationalSpectrumSummary(
+      studyName,
+      genomeDataType,
+      cancerTypeOrGroup,
+      numberOfResults
+    );
+    let data = await getBarPlotData(summary);
+    if (data.length == 0){
+      $("#mutationalSpectrumSummary").html(
+        `<p style="color:red">Error: no data available for the selected parameters.</p>`
+      );
+    }else{
+      let layout = {
+        title: `${studyName} ${cancerTypeOrGroup} ${genomeDataType} Mutational Spectrum Summary`,
+        xaxis: {
+          title: "Sample",
+        },
+        yaxis: {
+          title: "Log (Number of Mutations)",
+        },
+        barmode: "stack",
+      };
+      Plotly.default.newPlot("mutationalSpectrumSummary", data, layout);
+    }
+  } catch (err) {
+    console.error(err);
+    $("#mutationalSpectrumSummary").html(
+      `<p>Error: ${err.message}</p>`
+    );
   }
+}
+
+async function getBarPlotData(summary){
+  let data = [];
+  for (let i = 0; i < summary.length; i++) {
+    if (
+      !data.some(
+        (e) => e.name === summary[i]["profile"] + `: ${summary[i]["matrix"]}`
+      )
+    ) {
+      data.push({
+        x: [summary[i]["sample"]],
+        y: [summary[i]["logTotalMutations"]],
+        text: [parseInt(summary[i]["meanTotalMutations"])],
+        type: "bar",
+        name: summary[i]["profile"] + `: ${summary[i]["matrix"]}`,
+        marker: {
+          color: summary[i].color,
+        },
+      });
+    } else {
+      let existingData = data.find(
+        (e) => e.name === summary[i]["profile"] + `: ${summary[i]["matrix"]}`
+      );
+      existingData.x.push(summary[i]["sample"]);
+      existingData.y.push(summary[i]["logTotalMutations"]);
+      existingData.text.push(parseInt(summary[i]["meanTotalMutations"]));
+    }
+  }
+  return data;
+}
 
   //#endregion
 
