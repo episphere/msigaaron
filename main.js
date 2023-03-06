@@ -841,7 +841,7 @@ async function plotProfilerSummary(
     }
   } catch (err) {
     console.error(err);
-    $("#mutationalSpectrumSummary").html(
+    $(`#${divID}`).html(
       `<p>Error: ${err.message}</p>`
     );
   }
@@ -897,7 +897,7 @@ async function getBarPlotData(summary){
         let plotlyData = await formatMutationalSpectraData(data, matrixSize, sample);
 
         if (data.length == 0){
-            $("#mutationalSpectrumSummary").html(
+            $(`#${divID}`).html(
                 `<p style="color:red">Error: no data available for the selected parameters.</p>`
             );
         }else{
