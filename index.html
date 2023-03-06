@@ -14,7 +14,14 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.21.5/css/theme.bootstrap.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
   <link rel="stylesheet" href="./css/style.css">
-  <script type = "module" src="main.js"></script>
+  <script>
+    mSigSDK = import("./main.js").then((mSigSDK) => {
+      // set mSigSDK as a global variable
+      window.mSigSDK = mSigSDK.mSigSDK;
+
+    });
+
+  </script>
   <!-- <script src="https://cdn.plot.ly/plotly-2.18.2.min.js"></script> -->
 
 

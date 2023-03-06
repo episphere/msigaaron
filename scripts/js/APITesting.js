@@ -1,3 +1,5 @@
+
+
 $(document).ready(function () {
   populateAPIDropdown();
 });
@@ -48,7 +50,7 @@ $("#api-form-signatures").submit(async function (e) {
 
   switch (endpoint) {
     case "getMutationalSignaturesOptions":
-      let mutationalSignatureOptions = await mSigSDK.mSigPortal
+      let mutationalSignatureOptions = await mSigSDK.mSigPortal.mSigPortalData
         .getMutationalSignaturesOptions(
           genomeType,
           mutationType,
@@ -65,7 +67,7 @@ $("#api-form-signatures").submit(async function (e) {
         "#reference-signatures-value-select"
       ).val();
 
-      let mutationalSignatureData = await mSigSDK.mSigPortal
+      let mutationalSignatureData = await mSigSDK.mSigPortal.mSigPortalData
         .getMutationalSignaturesData(
           genomeType,
           referenceSignatureType,
@@ -81,7 +83,7 @@ $("#api-form-signatures").submit(async function (e) {
     case "getMutationalSignaturesSummary":
       let signatureSetName = $("#signature-set-name-value-select").val();
 
-      let mutationalSignatureSummary = await mSigSDK.mSigPortal
+      let mutationalSignatureSummary = await mSigSDK.mSigPortal.mSigPortalData
         .getMutationalSignaturesSummary(numberOfResults, signatureSetName)
         .then((results) => {
           generateTableWithJSON(results);
