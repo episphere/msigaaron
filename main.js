@@ -92,6 +92,7 @@ const mSigSDK = (function () {
   //#endregion
 
   //#region Mutational Spectrum
+
   async function getMutationalSpectrumOptions(
     study = "PCAWG",
     genomeDataType = "WGS",
@@ -253,7 +254,11 @@ const mSigSDK = (function () {
     }
     return matches;
   }
-  function tsvParseRows(tsvData) {
+
+  // This function parses the TSV data into rows
+// and returns an array of cells
+
+function tsvParseRows(tsvData) {
     // Split the TSV data into rows
     const rows = tsvData.trim().split("\n");
 
@@ -934,7 +939,6 @@ initialized to zeros.
   async function formatMutationalSpectraData(
     mutationalSpectra,
     matrixSize,
-    sample
   ) {
     if (matrixSize == 96) {
       let mutationalSpectrum = init_sbs_mutational_spectra();
