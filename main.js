@@ -133,8 +133,6 @@ const mSigSDK = (function () {
           (a, b) => a + b.totalMutationCount,
           0
         );
-      if (!node.name) console.log(children);
-
       if (!parent) result.children.push(children);
       else parent.children.push(children);
     }
@@ -1375,7 +1373,7 @@ initialized to zeros.
         minRadius: 20,
         maxRadius: 80,
         centerStrength: 0.5,
-        tooltipText: "Mutation Count: {totalMutationCount}",
+        tooltipText: "Total Mutations: {totalMutationCount}",
         showTooltipOn: "hover",
         tooltipPosition: "pointer",
         tooltipX: 0,
@@ -1385,7 +1383,10 @@ initialized to zeros.
 
     series.data.setAll([data]);
     series.set("selectedDataItem", series.dataItems[0]);
+    series.nodes.template.adapters.add("fill", function(fill, target) {
 
+      return fill.lighten(target.dataItem.level * 0.25);
+    });
     series.appear(1000, 100);
   }
 
