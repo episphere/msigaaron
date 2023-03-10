@@ -93,24 +93,48 @@ const mSigSDK = (function () {
   function formatHierarchicalClustersToAM5Format(
     firstFileStructure,
     studyName,
+    genomeType,
     cancerType,
-    studySize
+    studySize,
+    originalData
   ) {
     const result = {
-      name: `${studyName} ${cancerType}\nDataset (n=${studySize})`,
-      value: 4,
+      name: `${studyName} ${cancerType}\n${genomeType} Dataset (n=${studySize})`,
+      totalMutationCount: Object.values(originalData)
+        .map((array) => {
+          return Object.values(array);
+        })
+        .reduce((a, b) => {
+          return a.concat(b);
+        }) // flatten array
+        .reduce((a, b) => {
+          return a + b;
+        }),
       children: [],
     };
     function traverse(node, parent) {
       const children = {
         name: 1 - node.distance,
-        value: 1 - node.distance,
+        // value: 1 - node.distance,
         children: [],
+        totalMutationCount: 0,
       };
       if (node.left) traverse(node.left, children);
       if (node.right) traverse(node.right, children);
       if (node.name) children.name = node.name;
-      if (node.name) children.value = 1;
+      // if (node.name) children.value = 1;
+      if (node.name) children.mutations = originalData[node.name];
+      if (node.name)
+        children.totalMutationCount = Object.values(
+          originalData[node.name]
+        ).reduce((a, b) => a + b, 0);
+      if (!node.name)
+        children.totalMutationCount = children.children.reduce(
+          (a, b) => a + b.totalMutationCount,
+          0
+        );
+      if (!node.name) console.log(children);
+
       if (!parent) result.children.push(children);
       else parent.children.push(children);
     }
@@ -1228,19 +1252,20 @@ initialized to zeros.
       Object.values(groupedData).map((data) => Object.values(data))
     );
 
-    let cosSimilarityMatrix = distanceMatrix.map( function( row ) {
-        return row.map( function( cell ) { 
-            return 1- cell; 
-        } );
-    } );
+    let cosSimilarityMatrix = distanceMatrix.map(function (row) {
+      return row.map(function (cell) {
+        return 1 - cell;
+      });
+    });
 
-    let plotlyData = [{
-      z: cosSimilarityMatrix,
-      x: Object.keys(groupedData),
-      y: Object.keys(groupedData),
-      type: "heatmap",
-
-    }];
+    let plotlyData = [
+      {
+        z: cosSimilarityMatrix,
+        x: Object.keys(groupedData),
+        y: Object.keys(groupedData),
+        type: "heatmap",
+      },
+    ];
 
     console.log(distanceMatrix);
 
@@ -1293,14 +1318,16 @@ initialized to zeros.
     let formattedClusters = formatHierarchicalClustersToAM5Format(
       clusters,
       studyName,
+      genomeDataType,
       cancerType,
-      Object.keys(groupedData).length
+      Object.keys(groupedData).length,
+      groupedData
     );
 
     // $(`#${divID}`).css({"width": "100%", "height": "550px", "max-width": "100%"})
     const element = document.getElementById(divID);
     element.style.width = "100%";
-    element.style.height = "750px";
+    element.style.height = "600px";
     element.style.maxWidth = "100%";
 
     if (maxDepth != 0) {
@@ -1342,12 +1369,17 @@ initialized to zeros.
         singleBranchOnly: false,
         downDepth: 2,
         initialDepth: 0,
-        valueField: "value",
+        valueField: "totalMutationCount",
         categoryField: "name",
         childDataField: "children",
         minRadius: 20,
         maxRadius: 80,
         centerStrength: 0.5,
+        tooltipText: "Mutation Count: {totalMutationCount}",
+        showTooltipOn: "hover",
+        tooltipPosition: "pointer",
+        tooltipX: 0,
+        tooltipY: 0,
       })
     );
 
@@ -1379,7 +1411,7 @@ initialized to zeros.
     plotProfilerSummary,
     plotPatientMutationalSpectrum,
     plotForceDirectedTree,
-    plotCosineSimilarityHeatMap
+    plotCosineSimilarityHeatMap,
   };
 
   const mSigPortal = {
