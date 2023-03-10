@@ -1227,18 +1227,19 @@ initialized to zeros.
       Object.values(groupedData).map((data) => Object.values(data))
     );
 
-    let plotlyData = [
-      {
-        z: distanceMatrix.map(function (row) {
-          return row.map(function (cell) {
-            return 1 - cell;
-          });
-        }),
-        x: Object.keys(groupedData),
-        y: Object.keys(groupedData),
-        type: "heatmap",
-      },
-    ];
+    let cosSimilarityMatrix = distanceMatrix.map( function( row ) {
+        return row.map( function( cell ) { 
+            return 1- cell; 
+        } );
+    } );
+
+    let plotlyData = [{
+      z: cosSimilarityMatrix,
+      x: Object.keys(groupedData),
+      y: Object.keys(groupedData),
+      type: "heatmap",
+
+    }];
 
     console.log(distanceMatrix);
 
@@ -1254,6 +1255,7 @@ initialized to zeros.
       },
     };
     Plotly.default.newPlot(divID, plotlyData, layout);
+    return cosSimilarityMatrix;
   }
 
   // This function plots a force directed tree of the patients in the study based on their mutational spectra
@@ -1307,7 +1309,7 @@ initialized to zeros.
 
     generateForceDirectedTree(formattedClusters, divID);
 
-    return [distanceMatrix, Object.keys(groupedData), formattedClusters];
+    return formattedClusters;
   }
 
   // Generates an AMCharts force directed tree based on the given data and parameters
@@ -1375,7 +1377,7 @@ initialized to zeros.
     plotProfilerSummary,
     plotPatientMutationalSpectrum,
     plotForceDirectedTree,
-    plotCosineSimilarityHeatMap,
+    plotCosineSimilarityHeatMap
   };
 
   const mSigPortal = {
