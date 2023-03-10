@@ -93,10 +93,11 @@ const mSigSDK = (function () {
   function formatHierarchicalClustersToAM5Format(
     firstFileStructure,
     studyName,
+    cancerType,
     studySize
   ) {
     const result = {
-      name: studyName + ` Dataset (n=${studySize})`,
+      name: `${studyName} ${cancerType}\nDataset (n=${studySize})`,
       value: 4,
       children: [],
     };
@@ -1292,6 +1293,7 @@ initialized to zeros.
     let formattedClusters = formatHierarchicalClustersToAM5Format(
       clusters,
       studyName,
+      cancerType,
       Object.keys(groupedData).length
     );
 
