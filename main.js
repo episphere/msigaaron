@@ -60,13 +60,42 @@ const mSigSDK = (function () {
     }
   }
 
+
+  // limit the depth of the forceDirectedTree
+  function limitDepth(data, maxDepth) {
+    if (maxDepth === 0 || !Array.isArray(data.children)) {
+        // Base case: If max depth is reached or there are no more children, return data
+        return data;
+    }
+
+    // Recursively limit the depth of each child
+    data.children = data.children.map(child => limitDepth(child, maxDepth - 1));
+
+    if (maxDepth === 1) {
+        // If we've reached the maximum depth, merge all children and return the result
+        const mergedChildren = data.children.reduce((acc, curr) => {
+            if (Array.isArray(curr.children)) {
+                return [...acc, ...curr.children];
+            } else {
+                return [...acc, curr];
+            }
+        }, []);
+        return {...data, children: mergedChildren};
+    } else {
+        // Otherwise, return the data with its children intact
+        return data;
+    }
+}
+
+
   // Write a function that converts the json data from ./now.json to the format in ./structure.json
 
   function formatHierarchicalClustersToAM5Format(
     firstFileStructure,
-    studyName
+    studyName,
+    studySize
   ) {
-    const result = { name: studyName + " Dataset", value: 5, children: [] };
+    const result = { name: studyName + ` Dataset (n=${studySize})`, value: 4, children: [] };
     function traverse(node, parent) {
       const children = {
         name: 1 - node.distance,
@@ -76,11 +105,11 @@ const mSigSDK = (function () {
       if (node.left) traverse(node.left, children);
       if (node.right) traverse(node.right, children);
       if (node.name) children.name = node.name;
+      if (node.name) children.value = 1;
       if (!parent) result.children.push(children);
       else parent.children.push(children);
     }
     traverse(firstFileStructure);
-    console.log(result);
     return result;
   }
 
@@ -1156,7 +1185,8 @@ initialized to zeros.
     cancerType = "Lung-AdenoCA",
     mutationType = "SBS",
     matrixSize = 96,
-    divID = "forceDirectedTree"
+    divID = "forceDirectedTree",
+    maxDepth = 0
   ) {
     let data = await getMutationalSpectrumData(
       studyName,
@@ -1191,20 +1221,27 @@ initialized to zeros.
       Object.keys(groupedData)
     );
 
-    let formatedClusters = formatHierarchicalClustersToAM5Format(
+    let formattedClusters = formatHierarchicalClustersToAM5Format(
       clusters,
-      studyName
+      studyName,
+      Object.keys(groupedData).length,
     );
 
     // $(`#${divID}`).css({"width": "100%", "height": "550px", "max-width": "100%"})
     const element = document.getElementById(divID);
     element.style.width = "100%";
-    element.style.height = "550px";
+    element.style.height = "750px";
     element.style.maxWidth = "100%";
 
-    generateForceDirectedTree(formatedClusters, divID);
+    if (maxDepth!=0) {
+      formattedClusters = limitDepth(formattedClusters, maxDepth)
+    }
 
-    return [distanceMatrix, Object.keys(groupedData), formatedClusters];
+    console.log(formattedClusters, maxDepth)
+
+    generateForceDirectedTree(formattedClusters, divID);
+
+    return [distanceMatrix, Object.keys(groupedData), formattedClusters];
   }
 
   // Generates an AMCharts force directed tree based on the given data and parameters
@@ -1233,13 +1270,13 @@ initialized to zeros.
     var series = container.children.push(
       am5hierarchy.ForceDirected.new(root, {
         singleBranchOnly: false,
-        downDepth: 1,
-        initialDepth: 2,
+        downDepth: 2,
+        initialDepth: 0,
         valueField: "value",
         categoryField: "name",
         childDataField: "children",
-        minRadius: 40,
-        maxRadius: am5.percent(10),
+        minRadius: 20,
+        maxRadius: 80,
         centerStrength: 0.5,
       })
     );
