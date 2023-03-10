@@ -1373,20 +1373,19 @@ initialized to zeros.
         minRadius: 20,
         maxRadius: 80,
         centerStrength: 0.5,
-        tooltipText: "Total Mutations: {totalMutationCount}",
-        showTooltipOn: "hover",
-        tooltipPosition: "pointer",
-        tooltipX: 0,
-        tooltipY: 0,
       })
     );
 
-    series.data.setAll([data]);
-    series.set("selectedDataItem", series.dataItems[0]);
-    series.nodes.template.adapters.add("fill", function(fill, target) {
+    series.nodes.template._settings.tooltipText =  "Total Mutations: {totalMutationCount}"
+    series.adapters.add ("fill", function(fill, target) {
 
       return fill.lighten(target.dataItem.level * 0.25);
     });
+
+
+    series.data.setAll([data]);
+    series.set("selectedDataItem", series.dataItems[0]);
+
     series.appear(1000, 100);
   }
 
