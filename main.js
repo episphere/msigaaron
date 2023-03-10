@@ -1,9 +1,14 @@
 import * as localforage from "https://cdn.jsdelivr.net/npm/localforage/+esm";
 import * as pako from "https://cdn.jsdelivr.net/npm/pako/+esm";
 import * as Papa from "https://cdn.jsdelivr.net/npm/papaparse/+esm";
-// import * as Plotly from "./scripts/dependencies/plotly.js";
+
 //import Plotly as an es6 module
 import * as Plotly from "https://cdn.jsdelivr.net/npm/plotly.js-dist/+esm";
+
+import * as am5 from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/+esm";
+import * as am5hierarchy from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/hierarchy/+esm";
+
+import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.3.7/themes/Animated.js/+esm";
 
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
@@ -54,6 +59,123 @@ const mSigSDK = (function () {
       });
     }
   }
+
+    // Takes in an array of objects and a key and returns an object that groups the objects by the key
+
+    function groupBy(array, key) {
+      return array.reduce((result, currentValue) => {
+        (result[currentValue[key]] = result[currentValue[key]] || []).push(
+          currentValue
+        );
+        return result;
+      }, {});
+    }
+
+
+  // Write a function that creates a distance matrix based on 1 - the cosine similarity of a list of mutational spectra vectors
+  // The input is a list of mutational spectra vectors (each vector is a list of mutation frequencies)
+  // The output is a distance matrix (a list of lists of distances) 
+  function createDistanceMatrix(mutationalSpectra) {
+    let distanceMatrix = [];
+    for (let i = 0; i < mutationalSpectra.length; i++) {
+      let row = [];
+      for (let j = 0; j < mutationalSpectra.length; j++) {
+        let distance =
+          1 - cosineSimilarity(mutationalSpectra[i], mutationalSpectra[j]);
+        row.push(distance);
+      }
+      distanceMatrix.push(row);
+    }
+    return distanceMatrix;
+  }
+
+  // Write a function that calculates the cosine similarity of two vectors
+  // The input is two vectors (each vector is a list of numbers)
+  // The output is the cosine similarity of the two vectors
+  function cosineSimilarity(vector1, vector2) {
+    let dotProduct = 0;
+    let magnitude1 = 0;
+    let magnitude2 = 0;
+    for (let i = 0; i < vector1.length; i++) {
+      dotProduct += vector1[i] * vector2[i];
+      magnitude1 += vector1[i] * vector1[i];
+      magnitude2 += vector2[i] * vector2[i];
+    }
+    magnitude1 = Math.sqrt(magnitude1);
+    magnitude2 = Math.sqrt(magnitude2);
+    return dotProduct / (magnitude1 * magnitude2);
+  }
+
+  function hierarchicalClustering(distanceMatrix, sampleNames) {
+    // Create an array to store the clusters
+    let clusters = [];
+  
+    // Initialize each sample as its own cluster
+    for (let i = 0; i < distanceMatrix.length; i++) {
+      clusters.push([i]);
+    }
+  
+    // Loop until we have a single cluster left
+    while (clusters.length > 1) {
+      // Find the two closest clusters
+      let minDistance = Infinity;
+      let closestClusters = [];
+  
+      for (let i = 0; i < clusters.length; i++) {
+        for (let j = i+1; j < clusters.length; j++) {
+          // Calculate the distance between clusters i and j
+          let distance = calculateDistance(clusters[i], clusters[j], distanceMatrix);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestClusters = [i, j];
+          }
+        }
+      }
+  
+      // Merge the two closest clusters
+      let mergedCluster = clusters[closestClusters[0]].concat(clusters[closestClusters[1]]);
+      clusters.splice(closestClusters[1], 1);
+      clusters.splice(closestClusters[0], 1, mergedCluster);
+    }
+  
+    // Return the final clustering result as a tree
+    return buildTree(clusters[0], distanceMatrix, sampleNames);
+  }
+  
+  function calculateDistance(cluster1, cluster2, distanceMatrix) {
+    // Calculate the average distance between samples in the two clusters
+    let distanceSum = 0;
+    let numPairs = 0;
+  
+    for (let i = 0; i < cluster1.length; i++) {
+      for (let j = 0; j < cluster2.length; j++) {
+        distanceSum += distanceMatrix[cluster1[i]][cluster2[j]];
+        numPairs++;
+      }
+    }
+  
+    return distanceSum / numPairs;
+  }
+  
+  function buildTree(cluster, distanceMatrix, sampleNames) {
+    // Recursively build the tree using nested objects
+    if (cluster.length == 1) {
+      // If the cluster contains only one sample, return it as a leaf node
+      return {name: sampleNames[cluster[0]]};
+    } else {
+      // Otherwise, recursively build the tree for each sub-cluster
+      let leftCluster = cluster.slice(0, Math.floor(cluster.length / 2));
+      let rightCluster = cluster.slice(Math.floor(cluster.length / 2));
+  
+      return {
+        left: buildTree(leftCluster, distanceMatrix, sampleNames),
+        right: buildTree(rightCluster, distanceMatrix, sampleNames),
+        distance: calculateDistance(leftCluster, rightCluster, distanceMatrix)
+      };
+    }
+  }
+
+  
   // #endregion
 
   //#region Mutational Signatures
@@ -106,13 +228,21 @@ const mSigSDK = (function () {
 
   async function getMutationalSpectrumData(
     study = "PCAWG",
-    sample = "SP50263",
+    sample = null,
     genomeDataType = "WGS",
     cancerType = "Lung-AdenoCA",
     mutationType = "SBS",
     matrixSize = 96
   ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&sample=${sample}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
+
+    let url;
+
+    if (sample === null){
+      url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
+
+    }else{
+      url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&sample=${sample}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
+    }
     const cacheName = "getMutationalSpectrumData";
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
@@ -256,9 +386,9 @@ const mSigSDK = (function () {
   }
 
   // This function parses the TSV data into rows
-// and returns an array of cells
+  // and returns an array of cells
 
-function tsvParseRows(tsvData) {
+  function tsvParseRows(tsvData) {
     // Split the TSV data into rows
     const rows = tsvData.trim().split("\n");
 
@@ -901,7 +1031,7 @@ initialized to zeros.
       matrixSize
     );
 
-    let plotlyData = await formatMutationalSpectraData(
+    let plotlyData = formatMutationalSpectraData(
       data,
       matrixSize,
       sample
@@ -936,11 +1066,8 @@ initialized to zeros.
   // The y property is an array of the mutation frequencies
   // The type property is the type of substitution that takes place
 
-  async function formatMutationalSpectraData(
-    mutationalSpectra,
-    matrixSize,
-  ) {
-    if (matrixSize == 96) {
+  function formatMutationalSpectraData(mutationalSpectra, matrixSize) {
+    if (matrixSize === 96) {
       let mutationalSpectrum = init_sbs_mutational_spectra();
 
       for (let i = 0; i < mutationalSpectra.length; i++) {
@@ -968,16 +1095,145 @@ initialized to zeros.
       });
 
       return data;
-    } else if (matrixSize == 192) {
+    } else if (matrixSize === 192) {
       console.error("Not supported yet");
-    } else if (matrixSize == 1536) {
+    } else if (matrixSize === 1536) {
       console.error("Not supported yet");
     } else {
       console.error("Invalid Matrix Size");
     }
   }
 
+
+
   //#endregion
+
+
+  //#region Creates a force directed tree of the patients in the study based on their mutational spectra
+
+
+
+
+  async function plotForceDirectedTree(
+    studyName = "PCAWG",
+    genomeDataType = "WGS",
+    cancerType = "Lung-AdenoCA",
+    mutationType = "SBS",
+    matrixSize = 96,
+    divID = "forceDirectedTree"
+  ) {
+    let data = await getMutationalSpectrumData(
+      studyName,
+      null,
+      genomeDataType,
+      cancerType,
+      mutationType,
+      matrixSize
+    );
+
+    // Group all of the dictionaries in the data array by sample name
+    let groupedData = groupBy(data, "sample");
+
+    // Converts the grouped data into mutational spectrum dictionaries that can be used to create a force directed tree.
+    Object.keys(groupedData).forEach(function(key) {
+      let mutationalSpectrum = init_sbs_mutational_spectra();
+      
+      groupedData[key].forEach((mutation) => {
+        let mutationType = mutation["mutationType"];
+        mutationalSpectrum[mutationType] = mutation["mutations"];
+      });
+
+      groupedData[key] = mutationalSpectrum;
+
+    });
+
+
+    let distanceMatrix = await createDistanceMatrix(Object.values(groupedData).map(data => Object.values(data)));
+
+    let clusters = await hierarchicalClustering( distanceMatrix, Object.keys(groupedData));
+
+    let formatedClusters = formatHierarchicalClustersToAM5Format(clusters, studyName)
+
+    // $(`#${divID}`).css({"width": "100%", "height": "550px", "max-width": "100%"})
+    const element = document.getElementById(divID);
+    element.style.width = "100%";
+    element.style.height = '550px';
+    element.style.maxWidth = '100%';
+
+    generateForceDirectedTree(formatedClusters, divID);
+    
+    return [distanceMatrix, Object.keys(groupedData),formatedClusters];
+
+  }
+
+  // Write a function that converts the json data from ./now.json to the format in ./structure.json
+
+  function formatHierarchicalClustersToAM5Format(firstFileStructure, studyName) {
+    const result = { "name": studyName + " Dataset", "value": 5, "children": [] };
+    function traverse(node, parent) {
+        const children = { "name": 1 - node.distance, "value": (1 - node.distance),"children": [] };
+        if (node.left) traverse(node.left, children);
+        if (node.right) traverse(node.right, children);
+        if (node.name) children.name = node.name;
+        if (!parent) result.children.push(children);
+        else parent.children.push(children);
+    }
+    traverse(firstFileStructure);
+    console.log(result);
+    return result;
+}
+
+
+
+
+  // Generates an AMCharts force directed tree based on the given data and parameters
+  // https://www.amcharts.com/docs/v5/charts/hierarchy/force-directed/
+
+  async function generateForceDirectedTree(data, divID){
+
+        // Create root element
+    // https://www.amcharts.com/docs/v5/getting-started/#Root_element
+    var root = am5.Root.new(divID);
+    
+    
+    // Set themes
+    // https://www.amcharts.com/docs/v5/concepts/themes/
+    root.setThemes([
+      am5themes_Animated.default.new(root)
+    ]);
+    
+    
+    // Create wrapper container
+    var container = root.container.children.push(am5.Container.new(root, {
+      width: am5.percent(100),
+      height: am5.percent(100),
+      layout: root.verticalLayout
+    }));
+    
+    
+    // Create series
+    // https://www.amcharts.com/docs/v5/charts/hierarchy/#Adding
+    var series = container.children.push(am5hierarchy.ForceDirected.new(root, {
+      singleBranchOnly: false,
+      downDepth: 1,
+      initialDepth: 2,
+      valueField: "value",
+      categoryField: "name",
+      childDataField: "children",
+      minRadius: 40,
+      maxRadius: am5.percent(10),
+      centerStrength: 0.5
+    }));
+
+    series.data.setAll([data]);
+    series.set("selectedDataItem", series.dataItems[0]);
+
+    series.appear(1000, 100);
+
+  }
+
+  //#endregion
+
 
   //#region Define the public members of the mSigSDK
   const mSigPortalData = {
@@ -998,6 +1254,8 @@ initialized to zeros.
   const mSigPortalPlots = {
     plotProfilerSummary,
     plotPatientMutationalSpectrum,
+    plotForceDirectedTree,
+
   };
 
   const mSigPortal = {

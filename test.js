@@ -16,4 +16,7 @@ mutSpec = await mSigSDK.ICGC.convertMatrix(results)
 mSigSDK = await (await import("./main.js")).mSigSDK;
 
 // mSigSDK.mSigPortal.mSigPortalPlots.plotProfilerSummary();
-mSigSDK.mSigPortal.mSigPortalPlots.plotPatientMutationalSpectrum();
+// mSigSDK.mSigPortal.mSigPortalPlots.plotPatientMutationalSpectrum();
+
+mSigSDK.mSigPortal.mSigPortalPlots.plotForceDirectedTree();
+
