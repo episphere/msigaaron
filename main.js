@@ -60,33 +60,33 @@ const mSigSDK = (function () {
     }
   }
 
-
   // limit the depth of the forceDirectedTree
   function limitDepth(data, maxDepth) {
     if (maxDepth === 0 || !Array.isArray(data.children)) {
-        // Base case: If max depth is reached or there are no more children, return data
-        return data;
+      // Base case: If max depth is reached or there are no more children, return data
+      return data;
     }
 
     // Recursively limit the depth of each child
-    data.children = data.children.map(child => limitDepth(child, maxDepth - 1));
+    data.children = data.children.map((child) =>
+      limitDepth(child, maxDepth - 1)
+    );
 
     if (maxDepth === 1) {
-        // If we've reached the maximum depth, merge all children and return the result
-        const mergedChildren = data.children.reduce((acc, curr) => {
-            if (Array.isArray(curr.children)) {
-                return [...acc, ...curr.children];
-            } else {
-                return [...acc, curr];
-            }
-        }, []);
-        return {...data, children: mergedChildren};
+      // If we've reached the maximum depth, merge all children and return the result
+      const mergedChildren = data.children.reduce((acc, curr) => {
+        if (Array.isArray(curr.children)) {
+          return [...acc, ...curr.children];
+        } else {
+          return [...acc, curr];
+        }
+      }, []);
+      return { ...data, children: mergedChildren };
     } else {
-        // Otherwise, return the data with its children intact
-        return data;
+      // Otherwise, return the data with its children intact
+      return data;
     }
-}
-
+  }
 
   // Write a function that converts the json data from ./now.json to the format in ./structure.json
 
@@ -95,7 +95,11 @@ const mSigSDK = (function () {
     studyName,
     studySize
   ) {
-    const result = { name: studyName + ` Dataset (n=${studySize})`, value: 4, children: [] };
+    const result = {
+      name: studyName + ` Dataset (n=${studySize})`,
+      value: 4,
+      children: [],
+    };
     function traverse(node, parent) {
       const children = {
         name: 1 - node.distance,
@@ -1179,6 +1183,80 @@ initialized to zeros.
 
   //#region Creates a force directed tree of the patients in the study based on their mutational spectra
 
+  // This function extracts the mutational spectra out of the mSigPortal API call
+
+  function extractMutationalSpectra(data) {
+    // Group all of the dictionaries in the data array by sample name
+    let groupedData = groupBy(data, "sample");
+
+    // Converts the grouped data into mutational spectrum dictionaries that can be used to create a force directed tree.
+    Object.keys(groupedData).forEach(function (key) {
+      let mutationalSpectrum = init_sbs_mutational_spectra();
+
+      groupedData[key].forEach((mutation) => {
+        let mutationType = mutation["mutationType"];
+        mutationalSpectrum[mutationType] = mutation["mutations"];
+      });
+
+      groupedData[key] = mutationalSpectrum;
+    });
+    return groupedData;
+  }
+
+  async function plotCosineSimilarityHeatMap(
+    studyName = "PCAWG",
+    genomeDataType = "WGS",
+    cancerType = "Lung-AdenoCA",
+    mutationType = "SBS",
+    matrixSize = 96,
+    divID = "cosineSimilarityHeatMap"
+  ) {
+    let data = await getMutationalSpectrumData(
+      studyName,
+      null,
+      genomeDataType,
+      cancerType,
+      mutationType,
+      matrixSize
+    );
+
+    // Group all of the dictionaries in the data array by sample name and extract them into mutational spectrum dictionaries
+    let groupedData = extractMutationalSpectra(data);
+
+    let distanceMatrix = await createDistanceMatrix(
+      Object.values(groupedData).map((data) => Object.values(data))
+    );
+
+    let plotlyData = [
+      {
+        z: distanceMatrix.map(function (row) {
+          return row.map(function (cell) {
+            return 1 - cell;
+          });
+        }),
+        x: Object.keys(groupedData),
+        y: Object.keys(groupedData),
+        type: "heatmap",
+      },
+    ];
+
+    console.log(distanceMatrix);
+
+    let layout = {
+      title: `${studyName} ${genomeDataType} Cosine Similarity Heatmap`,
+      xaxis: {
+        title: "Sample",
+        type: "category",
+      },
+      yaxis: {
+        title: "Sample",
+        type: "category",
+      },
+    };
+    Plotly.default.newPlot(divID, plotlyData, layout);
+  }
+
+  // This function plots a force directed tree of the patients in the study based on their mutational spectra
   async function plotForceDirectedTree(
     studyName = "PCAWG",
     genomeDataType = "WGS",
@@ -1197,20 +1275,8 @@ initialized to zeros.
       matrixSize
     );
 
-    // Group all of the dictionaries in the data array by sample name
-    let groupedData = groupBy(data, "sample");
-
-    // Converts the grouped data into mutational spectrum dictionaries that can be used to create a force directed tree.
-    Object.keys(groupedData).forEach(function (key) {
-      let mutationalSpectrum = init_sbs_mutational_spectra();
-
-      groupedData[key].forEach((mutation) => {
-        let mutationType = mutation["mutationType"];
-        mutationalSpectrum[mutationType] = mutation["mutations"];
-      });
-
-      groupedData[key] = mutationalSpectrum;
-    });
+    // Group all of the dictionaries in the data array by sample name and extract them into mutational spectrum dictionaries
+    let groupedData = extractMutationalSpectra(data);
 
     let distanceMatrix = await createDistanceMatrix(
       Object.values(groupedData).map((data) => Object.values(data))
@@ -1224,7 +1290,7 @@ initialized to zeros.
     let formattedClusters = formatHierarchicalClustersToAM5Format(
       clusters,
       studyName,
-      Object.keys(groupedData).length,
+      Object.keys(groupedData).length
     );
 
     // $(`#${divID}`).css({"width": "100%", "height": "550px", "max-width": "100%"})
@@ -1233,11 +1299,11 @@ initialized to zeros.
     element.style.height = "750px";
     element.style.maxWidth = "100%";
 
-    if (maxDepth!=0) {
-      formattedClusters = limitDepth(formattedClusters, maxDepth)
+    if (maxDepth != 0) {
+      formattedClusters = limitDepth(formattedClusters, maxDepth);
     }
 
-    console.log(formattedClusters, maxDepth)
+    console.log(formattedClusters, maxDepth);
 
     generateForceDirectedTree(formattedClusters, divID);
 
@@ -1309,6 +1375,7 @@ initialized to zeros.
     plotProfilerSummary,
     plotPatientMutationalSpectrum,
     plotForceDirectedTree,
+    plotCosineSimilarityHeatMap,
   };
 
   const mSigPortal = {

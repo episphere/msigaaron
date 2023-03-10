@@ -37,3 +37,28 @@ var data = {
     level++;
     return data;
   }
+
+  function limitDepth(data, maxDepth) {
+    if (maxDepth === 0 || !Array.isArray(data.children)) {
+        // Base case: If max depth is reached or there are no more children, return data
+        return data;
+    }
+
+    // Recursively limit the depth of each child
+    data.children = data.children.map(child => limitDepth(child, maxDepth - 1));
+
+    if (maxDepth === 1) {
+        // If we've reached the maximum depth, merge all children and return the result
+        const mergedChildren = data.children.reduce((acc, curr) => {
+            if (Array.isArray(curr.children)) {
+                return [...acc, ...curr.children];
+            } else {
+                return [...acc, curr];
+            }
+        }, []);
+        return {...data, children: mergedChildren};
+    } else {
+        // Otherwise, return the data with its children intact
+        return data;
+    }
+}

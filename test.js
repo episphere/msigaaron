@@ -18,5 +18,11 @@ mSigSDK = await (await import("./main.js")).mSigSDK;
 // mSigSDK.mSigPortal.mSigPortalPlots.plotProfilerSummary();
 // mSigSDK.mSigPortal.mSigPortalPlots.plotPatientMutationalSpectrum();
 
-mSigSDK.mSigPortal.mSigPortalPlots.plotForceDirectedTree();
+// mSigSDK.mSigPortal.mSigPortalPlots.plotForceDirectedTree();
+mSigSDK.mSigPortal.mSigPortalPlots.plotCosineSimilarityHeatMap();
 
+
+SP50611 = dat[1].indexOf("SP50611") 
+SP50321 = dat[1].indexOf("SP50321") 
+
+dist = dat[0][SP50611][SP50321]
