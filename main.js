@@ -60,21 +60,44 @@ const mSigSDK = (function () {
     }
   }
 
-    // Takes in an array of objects and a key and returns an object that groups the objects by the key
+  // Write a function that converts the json data from ./now.json to the format in ./structure.json
 
-    function groupBy(array, key) {
-      return array.reduce((result, currentValue) => {
-        (result[currentValue[key]] = result[currentValue[key]] || []).push(
-          currentValue
-        );
-        return result;
-      }, {});
+  function formatHierarchicalClustersToAM5Format(
+    firstFileStructure,
+    studyName
+  ) {
+    const result = { name: studyName + " Dataset", value: 5, children: [] };
+    function traverse(node, parent) {
+      const children = {
+        name: 1 - node.distance,
+        value: 1 - node.distance,
+        children: [],
+      };
+      if (node.left) traverse(node.left, children);
+      if (node.right) traverse(node.right, children);
+      if (node.name) children.name = node.name;
+      if (!parent) result.children.push(children);
+      else parent.children.push(children);
     }
+    traverse(firstFileStructure);
+    console.log(result);
+    return result;
+  }
 
+  // Takes in an array of objects and a key and returns an object that groups the objects by the key
 
-  // Write a function that creates a distance matrix based on 1 - the cosine similarity of a list of mutational spectra vectors
+  function groupBy(array, key) {
+    return array.reduce((result, currentValue) => {
+      (result[currentValue[key]] = result[currentValue[key]] || []).push(
+        currentValue
+      );
+      return result;
+    }, {});
+  }
+
+  // This function creates a distance matrix based on 1 - the cosine similarity of a list of mutational spectra vectors
   // The input is a list of mutational spectra vectors (each vector is a list of mutation frequencies)
-  // The output is a distance matrix (a list of lists of distances) 
+  // The output is a distance matrix (a list of lists of distances)
   function createDistanceMatrix(mutationalSpectra) {
     let distanceMatrix = [];
     for (let i = 0; i < mutationalSpectra.length; i++) {
@@ -89,7 +112,7 @@ const mSigSDK = (function () {
     return distanceMatrix;
   }
 
-  // Write a function that calculates the cosine similarity of two vectors
+  // This function calculates the cosine similarity of two vectors
   // The input is two vectors (each vector is a list of numbers)
   // The output is the cosine similarity of the two vectors
   function cosineSimilarity(vector1, vector2) {
@@ -106,76 +129,101 @@ const mSigSDK = (function () {
     return dotProduct / (magnitude1 * magnitude2);
   }
 
+  // This function takes in the clusters and the distance matrix and calculates the distance between two clusters
+  function calculateDistance(cluster1, cluster2, distanceMatrix) {
+    let totalDistance = 0;
+    let totalSamples = 0;
+
+    // Loop through all pairs of samples in the two clusters
+    for (let i = 0; i < cluster1.length; i++) {
+      for (let j = 0; j < cluster2.length; j++) {
+        // Calculate the distance between the two samples and add it to the total distance between the clusters
+        let sample1 = cluster1[i];
+        let sample2 = cluster2[j];
+        totalDistance += distanceMatrix[sample1][sample2];
+        totalSamples++;
+      }
+    }
+    return totalDistance / totalSamples;
+  }
+
   function hierarchicalClustering(distanceMatrix, sampleNames) {
     // Create an array to store the clusters
     let clusters = [];
-  
+
     // Initialize each sample as its own cluster
     for (let i = 0; i < distanceMatrix.length; i++) {
       clusters.push([i]);
     }
-  
+
     // Loop until we have a single cluster left
     while (clusters.length > 1) {
       // Find the two closest clusters
       let minDistance = Infinity;
       let closestClusters = [];
-  
+
       for (let i = 0; i < clusters.length; i++) {
-        for (let j = i+1; j < clusters.length; j++) {
+        for (let j = i + 1; j < clusters.length; j++) {
           // Calculate the distance between clusters i and j
-          let distance = calculateDistance(clusters[i], clusters[j], distanceMatrix);
+          let distance = calculateDistance(
+            clusters[i],
+            clusters[j],
+            distanceMatrix
+          );
           if (distance < minDistance) {
             minDistance = distance;
             closestClusters = [i, j];
           }
         }
       }
-  
+
       // Merge the two closest clusters
-      let mergedCluster = clusters[closestClusters[0]].concat(clusters[closestClusters[1]]);
+      let mergedCluster = clusters[closestClusters[0]].concat(
+        clusters[closestClusters[1]]
+      );
       clusters.splice(closestClusters[1], 1);
       clusters.splice(closestClusters[0], 1, mergedCluster);
     }
-  
+
     // Return the final clustering result as a tree
     return buildTree(clusters[0], distanceMatrix, sampleNames);
   }
-  
+
+  // This function calculates the average distance between two clusters. It takes in two clusters and a distance matrix as its parameters. The clusters are arrays of indices of the samples in the distance matrix. It finds the average distance between the two clusters and returns the average distance.
+
   function calculateDistance(cluster1, cluster2, distanceMatrix) {
     // Calculate the average distance between samples in the two clusters
     let distanceSum = 0;
     let numPairs = 0;
-  
+
     for (let i = 0; i < cluster1.length; i++) {
       for (let j = 0; j < cluster2.length; j++) {
         distanceSum += distanceMatrix[cluster1[i]][cluster2[j]];
         numPairs++;
       }
     }
-  
+
     return distanceSum / numPairs;
   }
-  
+
   function buildTree(cluster, distanceMatrix, sampleNames) {
     // Recursively build the tree using nested objects
     if (cluster.length == 1) {
       // If the cluster contains only one sample, return it as a leaf node
-      return {name: sampleNames[cluster[0]]};
+      return { name: sampleNames[cluster[0]] };
     } else {
       // Otherwise, recursively build the tree for each sub-cluster
       let leftCluster = cluster.slice(0, Math.floor(cluster.length / 2));
       let rightCluster = cluster.slice(Math.floor(cluster.length / 2));
-  
+
       return {
         left: buildTree(leftCluster, distanceMatrix, sampleNames),
         right: buildTree(rightCluster, distanceMatrix, sampleNames),
-        distance: calculateDistance(leftCluster, rightCluster, distanceMatrix)
+        distance: calculateDistance(leftCluster, rightCluster, distanceMatrix),
       };
     }
   }
 
-  
   // #endregion
 
   //#region Mutational Signatures
@@ -234,13 +282,11 @@ const mSigSDK = (function () {
     mutationType = "SBS",
     matrixSize = 96
   ) {
-
     let url;
 
-    if (sample === null){
+    if (sample === null) {
       url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
-
-    }else{
+    } else {
       url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&sample=${sample}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
     }
     const cacheName = "getMutationalSpectrumData";
@@ -1031,11 +1077,7 @@ initialized to zeros.
       matrixSize
     );
 
-    let plotlyData = formatMutationalSpectraData(
-      data,
-      matrixSize,
-      sample
-    );
+    let plotlyData = formatMutationalSpectraData(data, matrixSize, sample);
 
     if (data.length == 0) {
       $(`#${divID}`).html(
@@ -1104,15 +1146,9 @@ initialized to zeros.
     }
   }
 
-
-
   //#endregion
 
-
   //#region Creates a force directed tree of the patients in the study based on their mutational spectra
-
-
-
 
   async function plotForceDirectedTree(
     studyName = "PCAWG",
@@ -1135,105 +1171,86 @@ initialized to zeros.
     let groupedData = groupBy(data, "sample");
 
     // Converts the grouped data into mutational spectrum dictionaries that can be used to create a force directed tree.
-    Object.keys(groupedData).forEach(function(key) {
+    Object.keys(groupedData).forEach(function (key) {
       let mutationalSpectrum = init_sbs_mutational_spectra();
-      
+
       groupedData[key].forEach((mutation) => {
         let mutationType = mutation["mutationType"];
         mutationalSpectrum[mutationType] = mutation["mutations"];
       });
 
       groupedData[key] = mutationalSpectrum;
-
     });
 
+    let distanceMatrix = await createDistanceMatrix(
+      Object.values(groupedData).map((data) => Object.values(data))
+    );
 
-    let distanceMatrix = await createDistanceMatrix(Object.values(groupedData).map(data => Object.values(data)));
+    let clusters = await hierarchicalClustering(
+      distanceMatrix,
+      Object.keys(groupedData)
+    );
 
-    let clusters = await hierarchicalClustering( distanceMatrix, Object.keys(groupedData));
-
-    let formatedClusters = formatHierarchicalClustersToAM5Format(clusters, studyName)
+    let formatedClusters = formatHierarchicalClustersToAM5Format(
+      clusters,
+      studyName
+    );
 
     // $(`#${divID}`).css({"width": "100%", "height": "550px", "max-width": "100%"})
     const element = document.getElementById(divID);
     element.style.width = "100%";
-    element.style.height = '550px';
-    element.style.maxWidth = '100%';
+    element.style.height = "550px";
+    element.style.maxWidth = "100%";
 
     generateForceDirectedTree(formatedClusters, divID);
-    
-    return [distanceMatrix, Object.keys(groupedData),formatedClusters];
 
+    return [distanceMatrix, Object.keys(groupedData), formatedClusters];
   }
-
-  // Write a function that converts the json data from ./now.json to the format in ./structure.json
-
-  function formatHierarchicalClustersToAM5Format(firstFileStructure, studyName) {
-    const result = { "name": studyName + " Dataset", "value": 5, "children": [] };
-    function traverse(node, parent) {
-        const children = { "name": 1 - node.distance, "value": (1 - node.distance),"children": [] };
-        if (node.left) traverse(node.left, children);
-        if (node.right) traverse(node.right, children);
-        if (node.name) children.name = node.name;
-        if (!parent) result.children.push(children);
-        else parent.children.push(children);
-    }
-    traverse(firstFileStructure);
-    console.log(result);
-    return result;
-}
-
-
-
 
   // Generates an AMCharts force directed tree based on the given data and parameters
   // https://www.amcharts.com/docs/v5/charts/hierarchy/force-directed/
 
-  async function generateForceDirectedTree(data, divID){
-
-        // Create root element
+  async function generateForceDirectedTree(data, divID) {
+    // Create root element
     // https://www.amcharts.com/docs/v5/getting-started/#Root_element
     var root = am5.Root.new(divID);
-    
-    
+
     // Set themes
     // https://www.amcharts.com/docs/v5/concepts/themes/
-    root.setThemes([
-      am5themes_Animated.default.new(root)
-    ]);
-    
-    
+    root.setThemes([am5themes_Animated.default.new(root)]);
+
     // Create wrapper container
-    var container = root.container.children.push(am5.Container.new(root, {
-      width: am5.percent(100),
-      height: am5.percent(100),
-      layout: root.verticalLayout
-    }));
-    
-    
+    var container = root.container.children.push(
+      am5.Container.new(root, {
+        width: am5.percent(100),
+        height: am5.percent(100),
+        layout: root.verticalLayout,
+      })
+    );
+
     // Create series
     // https://www.amcharts.com/docs/v5/charts/hierarchy/#Adding
-    var series = container.children.push(am5hierarchy.ForceDirected.new(root, {
-      singleBranchOnly: false,
-      downDepth: 1,
-      initialDepth: 2,
-      valueField: "value",
-      categoryField: "name",
-      childDataField: "children",
-      minRadius: 40,
-      maxRadius: am5.percent(10),
-      centerStrength: 0.5
-    }));
+    var series = container.children.push(
+      am5hierarchy.ForceDirected.new(root, {
+        singleBranchOnly: false,
+        downDepth: 1,
+        initialDepth: 2,
+        valueField: "value",
+        categoryField: "name",
+        childDataField: "children",
+        minRadius: 40,
+        maxRadius: am5.percent(10),
+        centerStrength: 0.5,
+      })
+    );
 
     series.data.setAll([data]);
     series.set("selectedDataItem", series.dataItems[0]);
 
     series.appear(1000, 100);
-
   }
 
   //#endregion
-
 
   //#region Define the public members of the mSigSDK
   const mSigPortalData = {
@@ -1255,7 +1272,6 @@ initialized to zeros.
     plotProfilerSummary,
     plotPatientMutationalSpectrum,
     plotForceDirectedTree,
-
   };
 
   const mSigPortal = {
