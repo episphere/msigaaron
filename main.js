@@ -332,21 +332,42 @@ const mSigSDK = (function () {
 
   async function getMutationalSpectrumData(
     study = "PCAWG",
-    sample = null,
+    samples = null,
     genomeDataType = "WGS",
     cancerType = "Lung-AdenoCA",
     mutationType = "SBS",
     matrixSize = 96
   ) {
-    let url;
-
-    if (sample === null) {
-      url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
-    } else {
-      url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&sample=${sample}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
-    }
     const cacheName = "getMutationalSpectrumData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+
+    const promises = [];
+    let urls = [];
+
+    if (samples === null) {
+      let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
+
+      return await (await fetchURLAndCache(cacheName, url)).json();
+    } else {
+      samples.forEach((sample) => {
+        urls.push(
+          `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&sample=${sample}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`
+        );
+      });
+    }
+
+    urls.forEach((url) => {
+      promises.push(fetchURLAndCache(cacheName, url));
+    });
+
+    const results = await Promise.all(promises);
+
+    const data = await Promise.all(
+      results.map((result) => {
+        return result.json();
+      })
+    );
+
+    return data;
   }
 
   async function getMutationalSpectrumSummary(
@@ -903,7 +924,7 @@ initialized to zeros.
           promises = [];
         }
       }
-      mutationalSpectra[[patient[0]['project_code']]] = mutationalSpectrum;
+      mutationalSpectra[[patient[0]["project_code"]]] = mutationalSpectrum;
     }
 
     return mutationalSpectra;
@@ -1099,16 +1120,36 @@ initialized to zeros.
     matrixSize = 96,
     divID = "mutationalSpectrumMatrix"
   ) {
-    if (Object.keys(mutationalSpectra).length == 0) {
+    const numberOfPatients = Object.keys(mutationalSpectra).length;
+    if (numberOfPatients == 0) {
       $(`#${divID}`).html(
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
-    } else {
+    } else if (numberOfPatients > 1) {
+      const layout = {
+        title: `Mutational Spectra for ${Object.keys(mutationalSpectra).join(
+          ", "
+        )}`,
+        xaxis: { title: "Mutation Type" },
+        yaxis: { title: "Count" },
+        barmode: "group",
+      };
 
+      const traces = Object.keys(mutationalSpectra).map((patient) => ({
+        x: Object.keys(mutationalSpectra[patient]),
+        y: Object.values(mutationalSpectra[patient]),
+        name: `${patient}`,
+        type: "bar",
+      }));
+
+      Plotly.default.newPlot(divID, traces, layout);
+    } else {
       let traces = [];
 
       const layout = {
-        title: `Mutational Spectra for ${Object.keys(mutationalSpectra).join(', ')}`,
+        title: `Mutational Spectra for ${Object.keys(mutationalSpectra).join(
+          ", "
+        )}`,
         xaxis: { title: "Mutation Type" },
         yaxis: { title: "Count" },
         barmode: "group",
@@ -1117,7 +1158,6 @@ initialized to zeros.
       for (let i = 0; i < Object.keys(mutationalSpectra).length; i++) {
         let plotlyData = formatMutationalSpectraData(
           mutationalSpectra[Object.keys(mutationalSpectra)[i]],
-          matrixSize,
           Object.keys(mutationalSpectra)[i]
         );
 
@@ -1140,7 +1180,8 @@ initialized to zeros.
   // The y property is an array of the mutation frequencies
   // The type property is the type of substitution that takes place
 
-  function formatMutationalSpectraData(mutationalSpectrum, matrixSize, sample) {
+  function formatMutationalSpectraData(mutationalSpectrum, sample) {
+    const matrixSize = Object.keys(mutationalSpectrum).length;
     if (matrixSize === 96) {
       const substitutionTypes = ["C>A", "C>G", "C>T", "T>A", "T>C", "T>G"];
 
