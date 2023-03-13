@@ -858,7 +858,7 @@ initialized to zeros.
   }
 
   async function convertMatrix(data, batch_size = 100) {
-    const mutationalSpectra = [];
+    const mutationalSpectra = {};
 
     for (let patient of data) {
       var mutationalSpectrum = init_sbs_mutational_spectra();
@@ -903,7 +903,7 @@ initialized to zeros.
           promises = [];
         }
       }
-      mutationalSpectra.push(mutationalSpectrum);
+      mutationalSpectra[[patient[0]['project_code']]] = mutationalSpectrum;
     }
 
     return mutationalSpectra;
@@ -1096,7 +1096,6 @@ initialized to zeros.
   // This function plots the mutational spectrum for the given parameters.
   async function plotPatientMutationalSpectrum(
     mutationalSpectra,
-    samples = ["SP50263"],
     matrixSize = 96,
     divID = "mutationalSpectrumMatrix"
   ) {
@@ -1105,17 +1104,11 @@ initialized to zeros.
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
     } else {
-      // const traces = Object.keys(mutationalSpectra).map((patient, index) => ({
-      //   x: Object.keys(mutationalSpectra[patient]),
-      //   y: Object.values(mutationalSpectra[patient]),
-      //   name: `${patient}`,
-      //   type: 'bar'
-      // }));
 
       let traces = [];
 
       const layout = {
-        title: `Mutational Spectra for ${samples}`,
+        title: `Mutational Spectra for ${Object.keys(mutationalSpectra).join(', ')}`,
         xaxis: { title: "Mutation Type" },
         yaxis: { title: "Count" },
         barmode: "group",
@@ -1125,7 +1118,7 @@ initialized to zeros.
         let plotlyData = formatMutationalSpectraData(
           mutationalSpectra[Object.keys(mutationalSpectra)[i]],
           matrixSize,
-          samples[i]
+          Object.keys(mutationalSpectra)[i]
         );
 
         traces = traces.concat(plotlyData);
