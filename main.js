@@ -869,46 +869,45 @@ initialized to zeros.
 
   async function convertMatrix(data, batch_size = 100) {
     const mutationalSpectra = [];
-  
+
     for (let patient of data) {
       var mutationalSpectrum = init_sbs_mutational_spectra();
       var promises = [];
-  
+
       for (let i = 0; i < patient.length; i++) {
         var chromosomeNumber = patient[i]["chromosome"];
         var referenceAllele = patient[i]["reference_genome_allele"];
         var mutatedTo = patient[i]["mutated_to_allele"];
         var position = patient[i]["chromosome_start"];
         var variantType = patient[i]["mutation_type"];
-  
-        var promise = getMutationalContext(
-          chromosomeNumber,
-          parseInt(position)
-        ).then((sequence) => {
-          sequence = standardize_trinucleotide(sequence);
-          let fivePrime = sequence[0];
-          let threePrime = sequence[2];
-          let mutationType = String(
-            `${fivePrime}[${standardize_substitution(
-              referenceAllele,
-              mutatedTo
-            )}]${threePrime}`
-          ).toUpperCase();
-  
-          if (
-            (variantType == "SNP" ||
-              variantType == "single base substitution") &&
-            !mutationType.includes("N") &&
-            !mutationType.includes("U")
-          ) {
-            mutationalSpectrum[mutationType] =
-              Number(mutationalSpectrum[mutationType]) + Number(1);
-          }
-        }).catch((error) => {
-          console.error(error);
-        });
+
+        var promise = getMutationalContext(chromosomeNumber, parseInt(position))
+          .then((sequence) => {
+            sequence = standardize_trinucleotide(sequence);
+            let fivePrime = sequence[0];
+            let threePrime = sequence[2];
+            let mutationType = String(
+              `${fivePrime}[${standardize_substitution(
+                referenceAllele,
+                mutatedTo
+              )}]${threePrime}`
+            ).toUpperCase();
+
+            if (
+              (variantType == "SNP" ||
+                variantType == "single base substitution") &&
+              !mutationType.includes("N") &&
+              !mutationType.includes("U")
+            ) {
+              mutationalSpectrum[mutationType] =
+                Number(mutationalSpectrum[mutationType]) + Number(1);
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+          });
         promises.push(promise);
-  
+
         if (i % batch_size === 0 || i === patient.length - 1) {
           await Promise.all(promises);
           promises = [];
@@ -916,16 +915,15 @@ initialized to zeros.
       }
       mutationalSpectra.push(mutationalSpectrum);
     }
-  
+
     return mutationalSpectra;
   }
 
-  
   async function getMutationalContext(chromosomeNumber, startPosition) {
     const chrName = String(chromosomeNumber);
     const startByte = startPosition - 2;
     const endByte = startPosition;
-  
+
     const alternative = await (
       await fetch(
         `https://api.genome.ucsc.edu/getData/sequence?genome=hg19;chrom=chr${chrName};start=${startByte};end=${
@@ -933,7 +931,7 @@ initialized to zeros.
         }`
       )
     ).json();
-  
+
     const sequence = alternative.dna;
     return sequence;
   }
@@ -1108,44 +1106,56 @@ initialized to zeros.
 
   // This function plots the mutational spectrum for the given parameters.
   async function plotPatientMutationalSpectrum(
-    studyName = "PCAWG",
-    sample = "SP50263",
-    genomeDataType = "WGS",
-    cancerType = "Lung-AdenoCA",
-    mutationType = "SBS",
+    mutationalSpectra,
+    samples = ["SP50263"],
     matrixSize = 96,
     divID = "mutationalSpectrumMatrix"
   ) {
-    let data = await getMutationalSpectrumData(
-      studyName,
-      sample,
-      genomeDataType,
-      cancerType,
-      mutationType,
-      matrixSize
-    );
-
-    let plotlyData = formatMutationalSpectraData(data, matrixSize, sample);
-
-    if (data.length == 0) {
+    if (Object.keys(mutationalSpectra).length == 0) {
       $(`#${divID}`).html(
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
     } else {
-      let layout = {
-        title: `${studyName} ${genomeDataType} Mutational Spectrum for Sample: ${sample}`,
-        xaxis: {
-          title: "Mutation Type",
-          type: "category",
-        },
-        yaxis: {
-          title: "Number of Single Base Substitutions",
-        },
-        barmode: "group",
+
+      // const traces = Object.keys(mutationalSpectra).map((patient, index) => ({
+      //   x: Object.keys(mutationalSpectra[patient]),
+      //   y: Object.values(mutationalSpectra[patient]),
+      //   name: `${patient}`,
+      //   type: 'bar'
+      // }));
+
+      let traces = [];
+
+      const layout = {
+        title: `Mutational Spectra for ${samples}`,
+        xaxis: {title: 'Mutation Type'},
+        yaxis: {title: 'Count'},
+        barmode: 'group',
+
       };
-      Plotly.default.newPlot(divID, plotlyData, layout);
+
+      for (let i=0; i<Object.keys(mutationalSpectra).length; i++) {
+        let plotlyData = formatMutationalSpectraData(
+          mutationalSpectra[Object.keys(mutationalSpectra)[i]],
+          matrixSize,
+          samples[i]
+        );
+        
+        traces = traces.concat(plotlyData);
+
+
+      }
+
+
+      Plotly.default.newPlot(divID, traces, layout);
     }
   }
+
+
+  // Write a function that plots a list of mutational spectra one on top of the other in a column using Plotly. The input should be the list of mutational spectra. 
+  // The output should be a plotly plot with the mutational spectra in a column.
+
+
 
   // This converts the mutational spectra data to a format that can be used to create a plotly chart
   // It takes in the mutational spectra data, the matrix size, and the sample
@@ -1156,19 +1166,12 @@ initialized to zeros.
   // The y property is an array of the mutation frequencies
   // The type property is the type of substitution that takes place
 
-  function formatMutationalSpectraData(mutationalSpectra, matrixSize) {
+  function formatMutationalSpectraData(mutationalSpectrum, matrixSize, sample) {
     if (matrixSize === 96) {
-      let mutationalSpectrum = init_sbs_mutational_spectra();
-
-      for (let i = 0; i < mutationalSpectra.length; i++) {
-        let mutationType = mutationalSpectra[i]["mutationType"];
-        mutationalSpectrum[mutationType] = mutationalSpectra[i]["mutations"];
-      }
-
       const substitutionTypes = ["C>A", "C>G", "C>T", "T>A", "T>C", "T>G"];
 
       const data = substitutionTypes.map((substitutionType) => {
-        return { name: substitutionType, x: [], y: [], type: "bar" };
+        return { name: `${substitutionType}  ${sample}`, x: [], y: [], type: "bar" };
       });
 
       substitutionTypes.forEach((substitutionType) => {
@@ -1177,9 +1180,9 @@ initialized to zeros.
             return key.includes(substitutionType);
           })
           .forEach((key) => {
-            data.find((e) => e.name === substitutionType).x.push(key);
+            data.find((e) => e.name === `${substitutionType}  ${sample}`).x.push(key);
             data
-              .find((e) => e.name === substitutionType)
+              .find((e) => e.name === `${substitutionType}  ${sample}`)
               .y.push(mutationalSpectrum[key]);
           });
       });
@@ -1219,25 +1222,12 @@ initialized to zeros.
   }
 
   async function plotCosineSimilarityHeatMap(
+    groupedData,
     studyName = "PCAWG",
     genomeDataType = "WGS",
     cancerType = "Lung-AdenoCA",
-    mutationType = "SBS",
-    matrixSize = 96,
     divID = "cosineSimilarityHeatMap"
   ) {
-    let data = await getMutationalSpectrumData(
-      studyName,
-      null,
-      genomeDataType,
-      cancerType,
-      mutationType,
-      matrixSize
-    );
-
-    // Group all of the dictionaries in the data array by sample name and extract them into mutational spectrum dictionaries
-    let groupedData = extractMutationalSpectra(data);
-
     let distanceMatrix = await createDistanceMatrix(
       Object.values(groupedData).map((data) => Object.values(data))
     );
@@ -1257,10 +1247,8 @@ initialized to zeros.
       },
     ];
 
-    console.log(distanceMatrix);
-
     let layout = {
-      title: `${studyName} ${genomeDataType} Cosine Similarity Heatmap`,
+      title: `${studyName} ${cancerType} ${genomeDataType} Cosine Similarity Heatmap`,
       xaxis: {
         title: "Sample",
         type: "category",
@@ -1276,26 +1264,13 @@ initialized to zeros.
 
   // This function plots a force directed tree of the patients in the study based on their mutational spectra
   async function plotForceDirectedTree(
+    groupedData,
     studyName = "PCAWG",
     genomeDataType = "WGS",
     cancerType = "Lung-AdenoCA",
-    mutationType = "SBS",
-    matrixSize = 96,
     divID = "forceDirectedTree",
     maxDepth = 0
   ) {
-    let data = await getMutationalSpectrumData(
-      studyName,
-      null,
-      genomeDataType,
-      cancerType,
-      mutationType,
-      matrixSize
-    );
-
-    // Group all of the dictionaries in the data array by sample name and extract them into mutational spectrum dictionaries
-    let groupedData = extractMutationalSpectra(data);
-
     let distanceMatrix = await createDistanceMatrix(
       Object.values(groupedData).map((data) => Object.values(data))
     );
@@ -1368,12 +1343,11 @@ initialized to zeros.
       })
     );
 
-    series.nodes.template._settings.tooltipText =  "Total Mutations: {totalMutationCount}"
-    series.adapters.add ("fill", function(fill, target) {
-
+    series.nodes.template._settings.tooltipText =
+      "Total Mutations: {totalMutationCount}";
+    series.adapters.add("fill", function (fill, target) {
       return fill.lighten(target.dataItem.level * 0.25);
     });
-
 
     series.data.setAll([data]);
     series.set("selectedDataItem", series.dataItems[0]);
@@ -1398,6 +1372,7 @@ initialized to zeros.
     getMutationalSignatureLandscapeData,
     getMutationalSignatureEtiologyOptions,
     getMutationalSignatureEtiologyData,
+    extractMutationalSpectra,
   };
   const mSigPortalPlots = {
     plotProfilerSummary,

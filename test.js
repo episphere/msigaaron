@@ -19,10 +19,26 @@ mSigSDK = await (await import("./main.js")).mSigSDK;
 // mSigSDK.mSigPortal.mSigPortalPlots.plotPatientMutationalSpectrum();
 
 // mSigSDK.mSigPortal.mSigPortalPlots.plotForceDirectedTree();
-mSigSDK.mSigPortal.mSigPortalPlots.plotCosineSimilarityHeatMap();
+// mSigSDK.mSigPortal.mSigPortalPlots.plotCosineSimilarityHeatMap();
 
+mutationalSpectrumData1 = await mSigSDK.mSigSDK.mSigPortal.mSigPortalData.getMutationalSpectrumData(
+    "PCAWG",
+    "SP50263",
+    "WGS",
+    "Lung-AdenoCA",
+    "SBS",
+    96,
+);
 
-SP50611 = dat[1].indexOf("SP50611") 
-SP50321 = dat[1].indexOf("SP50321") 
+mutationalSpectrumData2 = await mSigSDK.mSigSDK.mSigPortal.mSigPortalData.getMutationalSpectrumData(
+    "PCAWG",
+    "SP51446",
+    "WGS",
+    "Lung-AdenoCA",
+    "SBS",
+    96,
+);
 
-dist = dat[0][SP50611][SP50321]
+formattedMutationalSpectrumData = await mSigSDK.mSigSDK.mSigPortal.mSigPortalData.extractMutationalSpectra(mutationalSpectrumData1.concat(mutationalSpectrumData2))
+
+mSigSDK.mSigSDK.mSigPortal.mSigPortalPlots.plotPatientMutationalSpectrum(formattedMutationalSpectrumData, ["SP50263", "SP51446"],96,"mutationalSpectrumMatrix");
