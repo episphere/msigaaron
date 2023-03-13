@@ -867,24 +867,24 @@ initialized to zeros.
     }
   }
 
-  async function convertMatrix(data) {
+  async function convertMatrix(data, batch_size = 100) {
     const mutationalSpectra = [];
-
+  
     for (let patient of data) {
       var mutationalSpectrum = init_sbs_mutational_spectra();
-
+      var promises = [];
+  
       for (let i = 0; i < patient.length; i++) {
         var chromosomeNumber = patient[i]["chromosome"];
         var referenceAllele = patient[i]["reference_genome_allele"];
         var mutatedTo = patient[i]["mutated_to_allele"];
         var position = patient[i]["chromosome_start"];
         var variantType = patient[i]["mutation_type"];
-
-        try {
-          var sequence = await getMutationalContext(
-            chromosomeNumber,
-            parseInt(position)
-          );
+  
+        var promise = getMutationalContext(
+          chromosomeNumber,
+          parseInt(position)
+        ).then((sequence) => {
           sequence = standardize_trinucleotide(sequence);
           let fivePrime = sequence[0];
           let threePrime = sequence[2];
@@ -894,7 +894,7 @@ initialized to zeros.
               mutatedTo
             )}]${threePrime}`
           ).toUpperCase();
-
+  
           if (
             (variantType == "SNP" ||
               variantType == "single base substitution") &&
@@ -904,51 +904,43 @@ initialized to zeros.
             mutationalSpectrum[mutationType] =
               Number(mutationalSpectrum[mutationType]) + Number(1);
           }
-        } catch (error) {
+        }).catch((error) => {
           console.error(error);
+        });
+        promises.push(promise);
+  
+        if (i % batch_size === 0 || i === patient.length - 1) {
+          await Promise.all(promises);
+          promises = [];
         }
       }
       mutationalSpectra.push(mutationalSpectrum);
     }
-
+  
     return mutationalSpectra;
   }
 
-  const getMutationalContext = async (chromosomeNumber, startPosition) => {
+  
+  async function getMutationalContext(chromosomeNumber, startPosition) {
     const chrName = String(chromosomeNumber);
     const startByte = startPosition - 2;
-    const endByte = startPosition + 2;
-
-    const response = await fetch(
-      `https://storage.googleapis.com/storage/v1/b/chaos-game-representation-grch37/o/chr${chrName}%2Fsequence.bin?alt=media`,
-      {
-        headers: {
-          Range: `bytes=${startByte}-${endByte}`,
-        },
-      }
-    );
-    const view = new DataView(await response.arrayBuffer());
-
-    if (view.byteLength < 5) {
-      throw new Error("Invalid range");
-    }
-
-    let seq = "";
-    for (let i = 0; i < view.byteLength; i++) {
-      seq += String.fromCharCode(view.getUint8(i));
-    }
-
-    return seq;
-  };
+    const endByte = startPosition;
+  
+    const alternative = await (
+      await fetch(
+        `https://api.genome.ucsc.edu/getData/sequence?genome=hg19;chrom=chr${chrName};start=${startByte};end=${
+          endByte + 1
+        }`
+      )
+    ).json();
+  
+    const sequence = alternative.dna;
+    return sequence;
+  }
 
   //#endregion
 
   //#region Convert WGS MAF file to Panel MAF file
-
-  // Create a function that filters the nested array based on its mutation type being single base substitution
-  function filterWGSArray(WGSArray) {
-    return WGSArray.filter((row) => row[7] === "single base substitution");
-  }
 
   function isNumeric(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
