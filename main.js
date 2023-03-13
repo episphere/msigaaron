@@ -685,21 +685,6 @@ const mSigSDK = (function () {
     return dictionary;
   }
 
-  function getMAFColumnByValue(key) {
-    let selectedColumns = [
-      "icgc_mutation_id",
-      "project_code",
-      "icgc_donor_id",
-      "chromosome",
-      "chromosome_start",
-      "chromosome_end",
-      "assembly_version",
-      "mutation_type",
-      "reference_genome_allele",
-      "mutated_to_allele",
-    ];
-    return selectedColumns.indexOf(key);
-  }
 
   const obtainICGCDataMAF = async (
     projects = ["BRCA-US"],
@@ -755,7 +740,7 @@ const mSigSDK = (function () {
         );
 
         const data = returnDesiredColumns(nestedArray, indices);
-        return Object.values(groupAndSortData(data, indices));
+        return Object.values(groupAndSortData(data, indices)).map((patients) => {return patients.map ((mutations) => {return combineKeysAndValues(selectedColumns, mutations)})});
       });
 
       localforage.default.setItem(fileName, await ICGCMAF);
@@ -951,24 +936,24 @@ initialized to zeros.
       let row = WGSArray[i];
 
       let filteredRow;
-      if (isNumeric(row[getMAFColumnByValue("chromosome")])) {
+      if (isNumeric(row[("chromosome")])) {
         filteredRow = panelArray.filter(
           (panelRow) =>
             parseInt(panelRow["Chromosome"]) ===
-              parseInt(row[getMAFColumnByValue("chromosome")]) &&
+              parseInt(row[("chromosome")]) &&
             parseInt(panelRow["Start_Position"]) <=
-              parseInt(row[getMAFColumnByValue("chromosome_start")]) &&
+              parseInt(row[("chromosome_start")]) &&
             parseInt(panelRow["End_Position"]) >=
-              parseInt(row[getMAFColumnByValue("chromosome_end")])
+              parseInt(row[("chromosome_end")])
         );
       } else {
         filteredRow = panelArray.filter(
           (panelRow) =>
-            panelRow["Chromosome"] === row[getMAFColumnByValue("chromosome")] &&
+            panelRow["Chromosome"] === row[("chromosome")] &&
             parseInt(panelRow["Start_Position"]) <=
-              parseInt(row[getMAFColumnByValue("chromosome_start")]) &&
+              parseInt(row[("chromosome_start")]) &&
             parseInt(panelRow["End_Position"]) >=
-              parseInt(row[getMAFColumnByValue("chromosome_end")])
+              parseInt(row[("chromosome_end")])
         );
       }
 
@@ -985,7 +970,7 @@ initialized to zeros.
           "reference_genome_allele",
           "mutated_to_allele",
         ];
-        includedRows.push(combineKeysAndValues(MAFColumns, row));
+        includedRows.push(row);
       }
     }
 
