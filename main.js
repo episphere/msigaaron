@@ -685,7 +685,6 @@ const mSigSDK = (function () {
     return dictionary;
   }
 
-
   const obtainICGCDataMAF = async (
     projects = ["BRCA-US"],
     datatype = "ssm",
@@ -740,7 +739,13 @@ const mSigSDK = (function () {
         );
 
         const data = returnDesiredColumns(nestedArray, indices);
-        return Object.values(groupAndSortData(data, indices)).map((patients) => {return patients.map ((mutations) => {return combineKeysAndValues(selectedColumns, mutations)})});
+        return Object.values(groupAndSortData(data, indices)).map(
+          (patients) => {
+            return patients.map((mutations) => {
+              return combineKeysAndValues(selectedColumns, mutations);
+            });
+          }
+        );
       });
 
       localforage.default.setItem(fileName, await ICGCMAF);
@@ -936,24 +941,23 @@ initialized to zeros.
       let row = WGSArray[i];
 
       let filteredRow;
-      if (isNumeric(row[("chromosome")])) {
+      if (isNumeric(row["chromosome"])) {
         filteredRow = panelArray.filter(
           (panelRow) =>
-            parseInt(panelRow["Chromosome"]) ===
-              parseInt(row[("chromosome")]) &&
+            parseInt(panelRow["Chromosome"]) === parseInt(row["chromosome"]) &&
             parseInt(panelRow["Start_Position"]) <=
-              parseInt(row[("chromosome_start")]) &&
+              parseInt(row["chromosome_start"]) &&
             parseInt(panelRow["End_Position"]) >=
-              parseInt(row[("chromosome_end")])
+              parseInt(row["chromosome_end"])
         );
       } else {
         filteredRow = panelArray.filter(
           (panelRow) =>
-            panelRow["Chromosome"] === row[("chromosome")] &&
+            panelRow["Chromosome"] === row["chromosome"] &&
             parseInt(panelRow["Start_Position"]) <=
-              parseInt(row[("chromosome_start")]) &&
+              parseInt(row["chromosome_start"]) &&
             parseInt(panelRow["End_Position"]) >=
-              parseInt(row[("chromosome_end")])
+              parseInt(row["chromosome_end"])
         );
       }
 
@@ -1101,7 +1105,6 @@ initialized to zeros.
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
     } else {
-
       // const traces = Object.keys(mutationalSpectra).map((patient, index) => ({
       //   x: Object.keys(mutationalSpectra[patient]),
       //   y: Object.values(mutationalSpectra[patient]),
@@ -1113,34 +1116,27 @@ initialized to zeros.
 
       const layout = {
         title: `Mutational Spectra for ${samples}`,
-        xaxis: {title: 'Mutation Type'},
-        yaxis: {title: 'Count'},
-        barmode: 'group',
-
+        xaxis: { title: "Mutation Type" },
+        yaxis: { title: "Count" },
+        barmode: "group",
       };
 
-      for (let i=0; i<Object.keys(mutationalSpectra).length; i++) {
+      for (let i = 0; i < Object.keys(mutationalSpectra).length; i++) {
         let plotlyData = formatMutationalSpectraData(
           mutationalSpectra[Object.keys(mutationalSpectra)[i]],
           matrixSize,
           samples[i]
         );
-        
+
         traces = traces.concat(plotlyData);
-
-
       }
-
 
       Plotly.default.newPlot(divID, traces, layout);
     }
   }
 
-
-  // Write a function that plots a list of mutational spectra one on top of the other in a column using Plotly. The input should be the list of mutational spectra. 
+  // Write a function that plots a list of mutational spectra one on top of the other in a column using Plotly. The input should be the list of mutational spectra.
   // The output should be a plotly plot with the mutational spectra in a column.
-
-
 
   // This converts the mutational spectra data to a format that can be used to create a plotly chart
   // It takes in the mutational spectra data, the matrix size, and the sample
@@ -1156,7 +1152,12 @@ initialized to zeros.
       const substitutionTypes = ["C>A", "C>G", "C>T", "T>A", "T>C", "T>G"];
 
       const data = substitutionTypes.map((substitutionType) => {
-        return { name: `${substitutionType}  ${sample}`, x: [], y: [], type: "bar" };
+        return {
+          name: `${substitutionType}  ${sample}`,
+          x: [],
+          y: [],
+          type: "bar",
+        };
       });
 
       substitutionTypes.forEach((substitutionType) => {
@@ -1165,7 +1166,9 @@ initialized to zeros.
             return key.includes(substitutionType);
           })
           .forEach((key) => {
-            data.find((e) => e.name === `${substitutionType}  ${sample}`).x.push(key);
+            data
+              .find((e) => e.name === `${substitutionType}  ${sample}`)
+              .x.push(key);
             data
               .find((e) => e.name === `${substitutionType}  ${sample}`)
               .y.push(mutationalSpectrum[key]);
