@@ -16,22 +16,39 @@ const mSigSDK = (function () {
   // Solve argmin_x || Ax - b ||_2 for x>=0. A is a matrix, b is a vector.
   function nnls(A, b, maxiter = 3 * A[0].length) {
     const transpose = (matrix) => matrix[0].map((_, i) => matrix.map(row => row[i]));
-    const dot = (a, b) => a.map((_, i) => a[i] * b[i]).reduce((sum, x) => sum + x);
-    const matrixMultiply = (A, B) => A.map(row => B[0].map((_, j) => dot(row, B.map(col => col[j]))));
+    const dot = (a, b) => {
+      if (a[0].length === undefined) {
+        // Vector-vector multiplication
+        return a.map((_, i) => a[i] * b[i]).reduce((sum, x) => sum + x);
+      } else {
+        // Matrix-vector multiplication
+        return a.map(row => row.reduce((sum, x, i) => sum + x * b[i], 0));
+      }
+    };
+    const matrixMultiply = (A, B) => {
+      if (B[0].length === undefined) {
+        // Matrix-vector multiplication
+        return dot(A, B);
+      } else {
+        // Matrix-matrix multiplication
+        return A.map(row => B[0].map((_, j) => dot(row, B.map(col => col[j]))));
+      }
+    };
     const vectorSubtraction = (a, b) => a.map((x, i) => x - b[i]);
     const vectorAddition = (a, b) => a.map((x, i) => x + b[i]);
     const vectorScale = (a, scalar) => a.map(x => x * scalar);
+    const vectorNorm = (a) => Math.sqrt(dot(a, a));
   
     const At = transpose(A);
     const AtA = matrixMultiply(At, A);
-    const Atb = matrixMultiply(At, [b]).flat();
+    const Atb = matrixMultiply(At, b);
   
     let x = Array(A[0].length).fill(0);
     let gradient;
     let rnorm;
   
     for (let iter = 0; iter < maxiter; iter++) {
-      gradient = vectorSubtraction(matrixMultiply(AtA, [x]).flat(), Atb);
+      gradient = vectorSubtraction(matrixMultiply(AtA, x), Atb);
       let negativeGradient = gradient.map(x => -x);
   
       let alpha = 1;
@@ -44,15 +61,16 @@ const mSigSDK = (function () {
   
       x = new_x;
   
-      if (gradient.every(val => val <= 1e-8)) {
+      if (vectorNorm(gradient) <= 1e-8) {
         break;
       }
     }
   
-    rnorm = Math.sqrt(dot(vectorSubtraction(matrixMultiply(A, [x]).flat(), b), vectorSubtraction(matrixMultiply(A, [x]).flat(), b)));
+    rnorm = Math.sqrt(dot(vectorSubtraction(matrixMultiply(A, x), b), vectorSubtraction(matrixMultiply(A, x), b)));
   
     return { x, rnorm };
   }
+  
 
   async function fetchURLAndCache(cacheName, url, ICGC = null) {
     const isCacheSupported = "caches" in window;
@@ -1276,7 +1294,13 @@ initialized to zeros.
 
       groupedData[key].forEach((mutation) => {
         let mutationType = mutation["mutationType"];
-        mutationalSpectrum[mutationType] = mutation["mutations"];
+        if(groupName == "sample"){
+          mutationalSpectrum[mutationType] = mutation["mutations"];
+        } else if(groupName == "signatureName"){
+          mutationalSpectrum[mutationType] = mutation["contribution"];
+        }else{
+          console.error("Invalid group name");
+        }
       });
 
       groupedData[key] = mutationalSpectrum;
@@ -1502,6 +1526,7 @@ initialized to zeros.
   return {
     mSigPortal,
     ICGC,
+    nnls
   };
 })();
 

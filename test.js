@@ -1,44 +1,19 @@
-// Test all functionalities of ICGC module
 mSigSDK = await (await import("./main.js")).mSigSDK;
 
-data =await  mSigSDK.ICGC.obtainICGCDataMAF(
-projects = ["BRCA-US"],
-datatype = "ssm",
-analysis_type = "WGS",
-output_format = "TSV")
+cancerType = "Lung-AdenoCA";
+mutationalSignatures = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSignaturesData("WGS", "COSMIC_v3_Signatures_GRCh37_SBS96", "SBS", 10000)
+mutationalSignaturesExtracted = await mSigSDK.mSigPortal.mSigPortalData.extractMutationalSpectra(mutationalSignatures, "signatureName")
+nnlsInputSignatures = Object.values(mutationalSignaturesExtracted).map(data => {return Object.values(data)})
 
-results = await mSigSDK.ICGC.convertWGStoPanel(data.slice(10,11), "./MSK-IMPACT410.bed")
-
-mutSpec = await mSigSDK.ICGC.convertMatrix(results)
-
-// Testing mSigPortal Plots
-
-mSigSDK = await (await import("./main.js")).mSigSDK;
-
-// mSigSDK.mSigPortal.mSigPortalPlots.plotProfilerSummary();
-// mSigSDK.mSigPortal.mSigPortalPlots.plotPatientMutationalSpectrum();
-
-// mSigSDK.mSigPortal.mSigPortalPlots.plotForceDirectedTree();
-// mSigSDK.mSigPortal.mSigPortalPlots.plotCosineSimilarityHeatMap();
-
-mutationalSpectrumData1 = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSpectrumData(
+umapVisualizationData = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSpectrumData(
     "PCAWG",
-    "SP50263",
+    null,
     "WGS",
-    "Lung-AdenoCA",
+    cancerType,
     "SBS",
     96,
 );
 
-mutationalSpectrumData2 = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSpectrumData(
-    "PCAWG",
-    "SP51446",
-    "WGS",
-    "Lung-AdenoCA",
-    "SBS",
-    96,
-);
-
-formattedMutationalSpectrumData = await mSigSDK.mSigPortal.mSigPortalData.extractMutationalSpectra(mutationalSpectrumData1.concat(mutationalSpectrumData2))
-
-mSigSDK.mSigPortal.mSigPortalPlots.plotPatientMutationalSpectrum(formattedMutationalSpectrumData, ["SP50263", "SP51446"],96,"mutationalSpectrumMatrix");
+patientMutationalSpectra = await mSigSDK.mSigPortal.mSigPortalData.extractMutationalSpectra(umapVisualizationData, "sample")
+patientData = Object.values(patientMutationalSpectra).map(data => {return Object.values(data)})
+nnlsExposures = mSigSDK.nnls(nnlsInputSignatures, patientData[0])
