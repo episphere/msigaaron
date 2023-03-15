@@ -1519,7 +1519,7 @@ initialized to zeros.
     const rnorm = exposureData['rnorm'];
     delete exposureData['rnorm'];
     const plotType = "pie";
-    const plotTitle = `Mutational Signature Exposure for ${sample} (rnorm = ${rnorm})`;
+    const plotTitle = `Mutational Signature Exposure for ${sample} (r-norm = ${rnorm})`;
 
     let data = {
         labels: Object.keys(exposureData),
