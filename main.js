@@ -14,8 +14,10 @@ const mSigSDK = (function () {
   // #region Miscellaneous Functions
 
   // Solve argmin_x || Ax - b ||_2 for x>=0. A is a matrix, b is a vector.
-  function nnls(A, b, maxiter = 3 * A[0].length) {
+  // Output is a vector x with the same length as b. The rnrom is the residual || Ax - b ||^2.
+  async function nnls(A, b, maxiter = 3 * A[0].length) {
     const transpose = (matrix) => matrix[0].map((_, i) => matrix.map(row => row[i]));
+    A = transpose(A);
     const dot = (a, b) => {
       if (a[0].length === undefined) {
         // Vector-vector multiplication
@@ -1483,6 +1485,64 @@ initialized to zeros.
 
   //#endregion
 
+  //#region Signature Fitting
+
+  // This function fits the mutational spectra of a set of samples to a set of mutational signatures
+
+  async function fitMutationalSpectraToSignatures(mutationalSignatures, mutationalSpectra){
+    let signatures = Object.keys(mutationalSignatures);
+    let samples = Object.keys(mutationalSpectra);
+    let nnlsInputSignatures = Object.values(mutationalSignatures).map(data => {return Object.values(data)})
+    let nnlsInputMatrix = Object.values(mutationalSpectra).map(data => {return Object.values(data)})
+
+    let results = {};
+
+    for(let i = 0; i < samples.length; i++){
+
+      let nnlsInput = nnlsInputMatrix[i];
+      let nnlsOutput = await nnls(nnlsInputSignatures, nnlsInput);
+      const exposureValues = nnlsOutput.x;
+
+      for (let j = 0; j < signatures.length; j++) {
+        nnlsOutput[signatures[j]] = exposureValues[j];
+      }
+      delete nnlsOutput["x"];
+      results[samples[i]] = nnlsOutput;
+  }
+  return results;
+  }
+
+  // This function plots the exposure of a set of samples to a set of mutational signatures
+
+  async function plotMutationalSignatureExposure(exposureData, divID, sample){
+
+    const rnorm = exposureData['rnorm'];
+    delete exposureData['rnorm'];
+    const plotType = "pie";
+    const plotTitle = `Mutational Signature Exposure for ${sample} (rnorm = ${rnorm})`;
+
+    let data = {
+        labels: Object.keys(exposureData),
+        values: Object.values(exposureData),
+        name: `${sample} exposure values`,
+        textposition: 'inside',
+        hole: .4,
+        hoverinfo: 'name + value',
+        type: 'pie',
+      };
+    
+
+    let layout = {
+      title: plotTitle,
+    };
+
+    Plotly.default.newPlot(divID, [data], layout);
+
+    return data;
+  }
+
+
+  //#endregion
 
   //#region Define the public members of the mSigSDK
   const mSigPortalData = {
@@ -1526,7 +1586,8 @@ initialized to zeros.
   return {
     mSigPortal,
     ICGC,
-    nnls
+    fitMutationalSpectraToSignatures,
+    plotMutationalSignatureExposure
   };
 })();
 
