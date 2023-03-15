@@ -1333,18 +1333,24 @@ initialized to zeros.
         x: Object.keys(groupedData),
         y: Object.keys(groupedData),
         type: "heatmap",
+
       },
     ];
 
     let layout = {
       title: `${studyName} ${cancerType} ${genomeDataType} Cosine Similarity Heatmap`,
+      height: 800,
       xaxis: {
-        title: "Sample",
-        type: "category",
+        'title': "Sample",
+        'type': "category",
+        nticks:Object.keys(groupedData).length
+
       },
       yaxis: {
-        title: "Sample",
-        type: "category",
+        'title': "Sample",
+        'type': "category",
+        nticks:Object.keys(groupedData).length
+
       },
     };
     Plotly.default.newPlot(divID, plotlyData, layout);
