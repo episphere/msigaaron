@@ -2,7 +2,7 @@ import * as localforage from "https://cdn.jsdelivr.net/npm/localforage/+esm";
 import * as pako from "https://cdn.jsdelivr.net/npm/pako/+esm";
 import * as Papa from "https://cdn.jsdelivr.net/npm/papaparse/+esm";
 
-//import Plotly as an es6 module
+import * as UMAP from "https://cdn.jsdelivr.net/npm/umap-js/+esm";
 import * as Plotly from "https://cdn.jsdelivr.net/npm/plotly.js-dist/+esm";
 
 import * as am5 from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/+esm";
@@ -12,6 +12,48 @@ import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amch
 
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
+
+  // Solve argmin_x || Ax - b ||_2 for x>=0. A is a matrix, b is a vector.
+  function nnls(A, b, maxiter = 3 * A[0].length) {
+    const transpose = (matrix) => matrix[0].map((_, i) => matrix.map(row => row[i]));
+    const dot = (a, b) => a.map((_, i) => a[i] * b[i]).reduce((sum, x) => sum + x);
+    const matrixMultiply = (A, B) => A.map(row => B[0].map((_, j) => dot(row, B.map(col => col[j]))));
+    const vectorSubtraction = (a, b) => a.map((x, i) => x - b[i]);
+    const vectorAddition = (a, b) => a.map((x, i) => x + b[i]);
+    const vectorScale = (a, scalar) => a.map(x => x * scalar);
+  
+    const At = transpose(A);
+    const AtA = matrixMultiply(At, A);
+    const Atb = matrixMultiply(At, [b]).flat();
+  
+    let x = Array(A[0].length).fill(0);
+    let gradient;
+    let rnorm;
+  
+    for (let iter = 0; iter < maxiter; iter++) {
+      gradient = vectorSubtraction(matrixMultiply(AtA, [x]).flat(), Atb);
+      let negativeGradient = gradient.map(x => -x);
+  
+      let alpha = 1;
+      let new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
+  
+      while (new_x.some(val => val < 0)) {
+        alpha /= 2;
+        new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
+      }
+  
+      x = new_x;
+  
+      if (gradient.every(val => val <= 1e-8)) {
+        break;
+      }
+    }
+  
+    rnorm = Math.sqrt(dot(vectorSubtraction(matrixMultiply(A, [x]).flat(), b), vectorSubtraction(matrixMultiply(A, [x]).flat(), b)));
+  
+    return { x, rnorm };
+  }
+
   async function fetchURLAndCache(cacheName, url, ICGC = null) {
     const isCacheSupported = "caches" in window;
     let matchedURL;
@@ -286,11 +328,10 @@ const mSigSDK = (function () {
 
   async function getMutationalSignaturesOptions(
     genomeDataType = "WGS",
-    mutationType = "SBS",
-    numberOfResults = 10
+    mutationType = "SBS"
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature_options?
-    source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&limit=${numberOfResults}&offset=0`;
+    source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&offset=0`;
     const cacheName = "getMutationalSignaturesOptions";
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
@@ -1225,9 +1266,9 @@ initialized to zeros.
 
   // This function extracts the mutational spectra out of the mSigPortal API call
 
-  function extractMutationalSpectra(data) {
+  function extractMutationalSpectra(data, groupName="sample") {
     // Group all of the dictionaries in the data array by sample name
-    let groupedData = groupBy(data, "sample");
+    let groupedData = groupBy(data, groupName);
 
     // Converts the grouped data into mutational spectrum dictionaries that can be used to create a force directed tree.
     Object.keys(groupedData).forEach(function (key) {
@@ -1379,6 +1420,46 @@ initialized to zeros.
 
   //#endregion
 
+
+  //#region Visualizes a set of mutational spectra using UMAP
+
+  async function plotUMAPVisualization(data, divID, nComponents = 3, minDist = 0.1, nNeighbors = 15) {
+    let umap = new UMAP.default.UMAP({nComponents: nComponents, minDist: minDist, nNeighbors: nNeighbors});
+    let embeddings = await umap.fit(Object.values(data).map((data) => Object.values(data)));
+    let plotType = nComponents === 3 ? "scatter3d" : "scatter";
+    let axisLabels = nComponents === 3 ? ["X", "Y", "Z"] : ["X", "Y"];
+  
+    let trace = {
+      x: embeddings.map(d => d[0]),
+      y: embeddings.map(d => d[1]),
+      text: Object.keys(data),
+      mode: "markers",
+      type: plotType,
+      marker: { size: 6 },
+    };
+  
+    if (nComponents === 3) {
+      trace.z = embeddings.map(d => d[2]);
+    }
+  
+    let layout = {
+      title: `${nComponents} Component UMAP Projection of Mutational Signature Data`,
+      xaxis: { title: axisLabels[0] },
+      yaxis: { title: axisLabels[1] },
+    };
+  
+    if (nComponents === 3) {
+      layout.scene = { zaxis: { title: axisLabels[2] } };
+    }
+  
+    Plotly.default.newPlot(divID, [trace], layout);
+    
+    return trace;
+  }
+
+  //#endregion
+
+
   //#region Define the public members of the mSigSDK
   const mSigPortalData = {
     getMutationalSignaturesOptions,
@@ -1401,6 +1482,7 @@ initialized to zeros.
     plotPatientMutationalSpectrum,
     plotForceDirectedTree,
     plotCosineSimilarityHeatMap,
+    plotUMAPVisualization
   };
 
   const mSigPortal = {
