@@ -13,10 +13,17 @@ import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amch
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
 
+  // Deep copy an object
+  function deepCopy(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+
   // Solve argmin_x || Ax - b ||_2 for x>=0. A is a matrix, b is a vector.
   // Output is a vector x with the same length as b. The rnrom is the residual || Ax - b ||^2.
   async function nnls(A, b, maxiter = 3 * A[0].length) {
-    const transpose = (matrix) => matrix[0].map((_, i) => matrix.map(row => row[i]));
+    const transpose = (matrix) =>
+      matrix[0].map((_, i) => matrix.map((row) => row[i]));
     A = transpose(A);
     const dot = (a, b) => {
       if (a[0].length === undefined) {
@@ -24,7 +31,7 @@ const mSigSDK = (function () {
         return a.map((_, i) => a[i] * b[i]).reduce((sum, x) => sum + x);
       } else {
         // Matrix-vector multiplication
-        return a.map(row => row.reduce((sum, x, i) => sum + x * b[i], 0));
+        return a.map((row) => row.reduce((sum, x, i) => sum + x * b[i], 0));
       }
     };
     const matrixMultiply = (A, B) => {
@@ -33,46 +40,57 @@ const mSigSDK = (function () {
         return dot(A, B);
       } else {
         // Matrix-matrix multiplication
-        return A.map(row => B[0].map((_, j) => dot(row, B.map(col => col[j]))));
+        return A.map((row) =>
+          B[0].map((_, j) =>
+            dot(
+              row,
+              B.map((col) => col[j])
+            )
+          )
+        );
       }
     };
     const vectorSubtraction = (a, b) => a.map((x, i) => x - b[i]);
     const vectorAddition = (a, b) => a.map((x, i) => x + b[i]);
-    const vectorScale = (a, scalar) => a.map(x => x * scalar);
+    const vectorScale = (a, scalar) => a.map((x) => x * scalar);
     const vectorNorm = (a) => Math.sqrt(dot(a, a));
-  
+
     const At = transpose(A);
     const AtA = matrixMultiply(At, A);
     const Atb = matrixMultiply(At, b);
-  
+
     let x = Array(A[0].length).fill(0);
     let gradient;
     let rnorm;
-  
+
     for (let iter = 0; iter < maxiter; iter++) {
       gradient = vectorSubtraction(matrixMultiply(AtA, x), Atb);
-      let negativeGradient = gradient.map(x => -x);
-  
+      let negativeGradient = gradient.map((x) => -x);
+
       let alpha = 1;
       let new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
-  
-      while (new_x.some(val => val < 0)) {
+
+      while (new_x.some((val) => val < 0)) {
         alpha /= 2;
         new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
       }
-  
+
       x = new_x;
-  
+
       if (vectorNorm(gradient) <= 1e-8) {
         break;
       }
     }
-  
-    rnorm = Math.sqrt(dot(vectorSubtraction(matrixMultiply(A, x), b), vectorSubtraction(matrixMultiply(A, x), b)));
-  
+
+    rnorm = Math.sqrt(
+      dot(
+        vectorSubtraction(matrixMultiply(A, x), b),
+        vectorSubtraction(matrixMultiply(A, x), b)
+      )
+    );
+
     return { x, rnorm };
   }
-  
 
   async function fetchURLAndCache(cacheName, url, ICGC = null) {
     const isCacheSupported = "caches" in window;
@@ -1286,7 +1304,7 @@ initialized to zeros.
 
   // This function extracts the mutational spectra out of the mSigPortal API call
 
-  function extractMutationalSpectra(data, groupName="sample") {
+  function extractMutationalSpectra(data, groupName = "sample") {
     // Group all of the dictionaries in the data array by sample name
     let groupedData = groupBy(data, groupName);
 
@@ -1296,11 +1314,11 @@ initialized to zeros.
 
       groupedData[key].forEach((mutation) => {
         let mutationType = mutation["mutationType"];
-        if(groupName == "sample"){
+        if (groupName == "sample") {
           mutationalSpectrum[mutationType] = mutation["mutations"];
-        } else if(groupName == "signatureName"){
+        } else if (groupName == "signatureName") {
           mutationalSpectrum[mutationType] = mutation["contribution"];
-        }else{
+        } else {
           console.error("Invalid group name");
         }
       });
@@ -1333,7 +1351,6 @@ initialized to zeros.
         x: Object.keys(groupedData),
         y: Object.keys(groupedData),
         type: "heatmap",
-
       },
     ];
 
@@ -1341,16 +1358,14 @@ initialized to zeros.
       title: `${studyName} ${cancerType} ${genomeDataType} Cosine Similarity Heatmap`,
       height: 800,
       xaxis: {
-        'title': "Sample",
-        'type': "category",
-        nticks:Object.keys(groupedData).length
-
+        title: "Sample",
+        type: "category",
+        nticks: Object.keys(groupedData).length,
       },
       yaxis: {
-        'title': "Sample",
-        'type': "category",
-        nticks:Object.keys(groupedData).length
-
+        title: "Sample",
+        type: "category",
+        nticks: Object.keys(groupedData).length,
       },
     };
     Plotly.default.newPlot(divID, plotlyData, layout);
@@ -1452,40 +1467,64 @@ initialized to zeros.
 
   //#endregion
 
-
-  //#region Visualizes a set of mutational spectra using UMAP
-
-  async function plotUMAPVisualization(data, divID, nComponents = 3, minDist = 0.1, nNeighbors = 15) {
-    let umap = new UMAP.default.UMAP({nComponents: nComponents, minDist: minDist, nNeighbors: nNeighbors});
-    let embeddings = await umap.fit(Object.values(data).map((data) => Object.values(data)));
+  //#region Visualizes a set of mutational spectra using UMAP. 
+  
+  // If 3 components are used, uses delaunay triangulation. https://plotly.com/python/3d-mesh/
+  // If 2 components are used, uses scatter plot. https://plotly.com/python/line-and-scatter/
+  // The alphahull parameter sets the shape of the mesh. If the value is -1 (default value) then Delaunay triangulation is used. If >0 then the alpha-shape algorithm is used. If 0, the convex hull is represented (resulting in a convex body).
+  
+  async function plotUMAPVisualization(
+    data,
+    divID,
+    nComponents = 3,
+    minDist = 0.1,
+    nNeighbors = 15
+  ) {
+    let umap = new UMAP.default.UMAP({
+      nComponents: nComponents,
+      minDist: minDist,
+      nNeighbors: nNeighbors,
+    });
+    let embeddings = await umap.fit(
+      Object.values(data).map((data) => Object.values(data))
+    );
     let plotType = nComponents === 3 ? "scatter3d" : "scatter";
     let axisLabels = nComponents === 3 ? ["X", "Y", "Z"] : ["X", "Y"];
-  
-    let trace = {
-      x: embeddings.map(d => d[0]),
-      y: embeddings.map(d => d[1]),
+
+    let trace = [{
+      x: embeddings.map((d) => d[0]),
+      y: embeddings.map((d) => d[1]),
       text: Object.keys(data),
       mode: "markers",
       type: plotType,
       marker: { size: 6 },
-    };
-  
+    }];
+
     if (nComponents === 3) {
-      trace.z = embeddings.map(d => d[2]);
+      trace[0].z = embeddings.map((d) => d[2]);
+
+      trace.push({
+        alphahull: 7,
+        opacity: 0.1,
+        type: 'mesh3d',
+        x: embeddings.map((d) => d[0]),
+        y: embeddings.map((d) => d[1]),
+        z: embeddings.map((d) => d[2]),
+    })
     }
-  
+
     let layout = {
       title: `${nComponents} Component UMAP Projection of Mutational Signature Data`,
       xaxis: { title: axisLabels[0] },
       yaxis: { title: axisLabels[1] },
     };
-  
+
     if (nComponents === 3) {
       layout.scene = { zaxis: { title: axisLabels[2] } };
     }
-  
-    Plotly.default.newPlot(divID, [trace], layout);
-    
+
+    Plotly.default.newPlot(divID, trace, layout);
+
     return trace;
   }
 
@@ -1495,16 +1534,24 @@ initialized to zeros.
 
   // This function fits the mutational spectra of a set of samples to a set of mutational signatures
 
-  async function fitMutationalSpectraToSignatures(mutationalSignatures, mutationalSpectra){
+  async function fitMutationalSpectraToSignatures(
+    mutationalSignatures,
+    mutationalSpectra
+  ) {
     let signatures = Object.keys(mutationalSignatures);
     let samples = Object.keys(mutationalSpectra);
-    let nnlsInputSignatures = Object.values(mutationalSignatures).map(data => {return Object.values(data)})
-    let nnlsInputMatrix = Object.values(mutationalSpectra).map(data => {return Object.values(data)})
+    let nnlsInputSignatures = Object.values(mutationalSignatures).map(
+      (data) => {
+        return Object.values(data);
+      }
+    );
+    let nnlsInputMatrix = Object.values(mutationalSpectra).map((data) => {
+      return Object.values(data);
+    });
 
     let results = {};
 
-    for(let i = 0; i < samples.length; i++){
-
+    for (let i = 0; i < samples.length; i++) {
       let nnlsInput = nnlsInputMatrix[i];
       let nnlsOutput = await nnls(nnlsInputSignatures, nnlsInput);
       const exposureValues = nnlsOutput.x;
@@ -1514,29 +1561,30 @@ initialized to zeros.
       }
       delete nnlsOutput["x"];
       results[samples[i]] = nnlsOutput;
-  }
-  return results;
+    }
+    return results;
   }
 
   // This function plots the exposure of a set of samples to a set of mutational signatures
 
-  async function plotMutationalSignatureExposure(exposureData, divID, sample){
+  async function plotPatientMutationalSignaturesExposure(exposureData, divID, sample) {
 
-    const rnorm = exposureData['rnorm'];
-    delete exposureData['rnorm'];
+    let dataset = deepCopy(exposureData);
+
+    const rnorm = dataset["rnorm"];
+    delete dataset["rnorm"];
     const plotType = "pie";
     const plotTitle = `Mutational Signature Exposure for ${sample} (r-norm = ${rnorm})`;
 
     let data = {
-        labels: Object.keys(exposureData),
-        values: Object.values(exposureData),
-        name: `${sample} exposure values`,
-        textposition: 'inside',
-        hole: .4,
-        hoverinfo: 'name + value',
-        type: 'pie',
-      };
-    
+      labels: Object.keys(dataset),
+      values: Object.values(dataset),
+      name: `${sample} exposure values`,
+      textposition: "inside",
+      hole: 0.4,
+      hoverinfo: "name + value",
+      type: "pie",
+    };
 
     let layout = {
       title: plotTitle,
@@ -1545,6 +1593,56 @@ initialized to zeros.
     Plotly.default.newPlot(divID, [data], layout);
 
     return data;
+  }
+
+  
+async function plotDatasetMutationalSignaturesExposure(exposureData, divID, relative = true) {
+    
+    let dataset = deepCopy(exposureData);
+    // Remove the rnorm values from each sample of the exposure data
+
+    for (let sample in dataset) {
+      delete dataset[sample]["rnorm"];
+    }
+
+    if (relative) {
+      for (let sample in dataset) {
+        let total = 0;
+        for (let signature in dataset[sample]) {
+          total += dataset[sample][signature];
+        }
+        for (let signature in dataset[sample]) {
+          dataset[sample][signature] /= total;
+        }
+      }
+    }
+
+    let data = {
+      z: Object.values(dataset).map((data) => Object.values(data)),
+      x: Object.keys(dataset[Object.keys(dataset)[0]]),
+      y: Object.keys(dataset),
+      type: "heatmap",
+      colorscale: "Viridis",
+    };
+
+    let layout = {
+      title: "Mutational Signature Exposure for Dataset",
+      xaxis: {
+        title: "Samples",
+        nticks: Object.keys(dataset[Object.keys(dataset)[0]]).length,
+      },
+      yaxis: {
+        title: "Mutational Signatures",
+        nticks: Object.keys(dataset).length,
+
+      },
+      height: 800,
+    };
+
+    Plotly.default.newPlot(divID, [data], layout);
+
+    return data;
+
   }
 
 
@@ -1572,7 +1670,7 @@ initialized to zeros.
     plotPatientMutationalSpectrum,
     plotForceDirectedTree,
     plotCosineSimilarityHeatMap,
-    plotUMAPVisualization
+    plotUMAPVisualization,
   };
 
   const mSigPortal = {
@@ -1593,7 +1691,8 @@ initialized to zeros.
     mSigPortal,
     ICGC,
     fitMutationalSpectraToSignatures,
-    plotMutationalSignatureExposure
+    plotPatientMutationalSignaturesExposure,
+    plotDatasetMutationalSignaturesExposure
   };
 })();
 
