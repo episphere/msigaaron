@@ -422,10 +422,27 @@ const mSigSDK = (function () {
     const promises = [];
     let urls = [];
 
+    if (cancerType == null){
+      let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
+
+      let unformattedData = await (await fetchURLAndCache(cacheName, url)).json();
+      let formattedData = groupBy(unformattedData, "cancer")
+      Object.keys(formattedData).forEach(function(key, index) {
+        formattedData[key] = groupBy(formattedData[key], "sample");
+        Object.keys(formattedData[key]).forEach(function(patient, index) {
+          formattedData[key][patient] = extractMutationalSpectra(formattedData[key][patient], "sample");
+
+        });
+      });
+      return formattedData;
+    }
+
     if (samples === null) {
       let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
 
-      return await (await fetchURLAndCache(cacheName, url)).json();
+      let unformattedData = await (await fetchURLAndCache(cacheName, url)).json();
+      let formattedData = extractMutationalSpectra(unformattedData, "sample");
+      return formattedData;
     } else {
       samples.forEach((sample) => {
         urls.push(
@@ -446,7 +463,9 @@ const mSigSDK = (function () {
       })
     );
 
-    return data;
+    let formattedData = extractMutationalSpectra(data.flat(), "sample");
+
+    return formattedData;
   }
 
   async function getMutationalSpectrumSummary(
@@ -1663,7 +1682,6 @@ async function plotDatasetMutationalSignaturesExposure(exposureData, divID, rela
     getMutationalSignatureLandscapeData,
     getMutationalSignatureEtiologyOptions,
     getMutationalSignatureEtiologyData,
-    extractMutationalSpectra,
   };
   const mSigPortalPlots = {
     plotProfilerSummary,
@@ -1684,12 +1702,17 @@ async function plotDatasetMutationalSignaturesExposure(exposureData, divID, rela
     convertWGStoPanel,
   };
 
+  const tools = {
+    groupBy
+  }
+
   //#endregion
 
   // Public members
   return {
     mSigPortal,
     ICGC,
+    tools,
     fitMutationalSpectraToSignatures,
     plotPatientMutationalSignaturesExposure,
     plotDatasetMutationalSignaturesExposure
