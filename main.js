@@ -10,6 +10,8 @@ import * as am5hierarchy from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/
 
 import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.3.7/themes/Animated.js/+esm";
 
+import { default as plotMutationalProfile } from "./scripts/js/controls/plotly/mutationalProfiles/sbs96.js";
+
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
 
@@ -387,7 +389,9 @@ const mSigSDK = (function () {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature?
     source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&matrix=96&signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
     const cacheName = "getMutationalSignaturesData";
-    return extractMutationalSpectra(await (await fetchURLAndCache(cacheName, url)).json(), "signatureName") ;
+    const unformattedData = await (await fetchURLAndCache(cacheName, url)).json();
+    const formattedData = extractMutationalSpectra(unformattedData, "signatureName");
+    return unformattedData;
   }
 
   async function getMutationalSignaturesSummary(
@@ -433,12 +437,13 @@ const mSigSDK = (function () {
       let formattedData = groupBy(unformattedData, "cancer")
       Object.keys(formattedData).forEach(function(key, index) {
         formattedData[key] = groupBy(formattedData[key], "sample");
-        Object.keys(formattedData[key]).forEach(function(patient, index) {
+        Object.keys(formattedData[key]).foEach(function(patient, index) {
           formattedData[key][patient] = Object.values(extractMutationalSpectra(formattedData[key][patient], "sample"))[0];
 
         });
       });
-      return formattedData;
+
+      return unformattedData;
     }
 
     if (samples === null) {
@@ -446,7 +451,7 @@ const mSigSDK = (function () {
 
       let unformattedData = await (await fetchURLAndCache(cacheName, url)).json();
       let formattedData = extractMutationalSpectra(unformattedData, "sample");
-      return formattedData;
+      return unformattedData;
     } else {
       samples.forEach((sample) => {
         urls.push(
@@ -469,7 +474,7 @@ const mSigSDK = (function () {
 
     let formattedData = extractMutationalSpectra(data.flat(), "sample");
 
-    return formattedData;
+    return data;
   }
 
   async function getMutationalSpectrumSummary(
@@ -1753,6 +1758,7 @@ async function plotDatasetMutationalSignaturesExposure(exposureData, divID, rela
     getMutationalSignatureLandscapeData,
     getMutationalSignatureEtiologyOptions,
     getMutationalSignatureEtiologyData,
+    extractMutationalSpectra,
   };
   const mSigPortalPlots = {
     plotProfilerSummary,
@@ -1787,7 +1793,8 @@ async function plotDatasetMutationalSignaturesExposure(exposureData, divID, rela
     tools,
     fitMutationalSpectraToSignatures,
     plotPatientMutationalSignaturesExposure,
-    plotDatasetMutationalSignaturesExposure
+    plotDatasetMutationalSignaturesExposure,
+    plotMutationalProfile,
   };
 })();
 

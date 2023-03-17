@@ -16,4 +16,4 @@ umapVisualizationData = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSpe
 patientMutationalSpectra = await mSigSDK.mSigPortal.mSigPortalData.extractMutationalSpectra(umapVisualizationData, "sample")
 nnlsExposures = await mSigSDK.fitMutationalSpectraToSignatures(mutationalSignaturesExtracted, patientMutationalSpectra)
 
-mSigSDK.mSigSDK.plotMutationalSignatureExposure(nnlsExposures["SP50263"], "exposureGraph", "SP50263")
+mSigSDK.plotMutationalSignatureExposure(nnlsExposures["SP50263"], "exposureGraph", "SP50263")
