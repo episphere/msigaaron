@@ -434,7 +434,7 @@ const mSigSDK = (function () {
       Object.keys(formattedData).forEach(function(key, index) {
         formattedData[key] = groupBy(formattedData[key], "sample");
         Object.keys(formattedData[key]).forEach(function(patient, index) {
-          formattedData[key][patient] = extractMutationalSpectra(formattedData[key][patient], "sample");
+          formattedData[key][patient] = Object.values(extractMutationalSpectra(formattedData[key][patient], "sample"))[0];
 
         });
       });
@@ -1248,7 +1248,7 @@ initialized to zeros.
 
       const trace = {
         // x: Object.keys(project[cancerType]),
-        y: Object.values(cancerTypeData).map((e) => Math.log(Object.values(Object.values(e)[0]).reduce((a,b)=> a+b, 0))),
+        y: Object.values(cancerTypeData).map((e) => Math.log(Object.values(e).reduce((a,b)=> a+b, 0))),
         type: "box",
         name: cancerType,
         marker: {
