@@ -13,6 +13,10 @@ import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amch
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
 
+  function linspace(a, b, n) {
+    return Array.from({length: n}, (_, i) => a + i * (b - a) / (n - 1));
+  }
+  
   // Deep copy an object
   function deepCopy(obj) {
     return JSON.parse(JSON.stringify(obj));
@@ -516,6 +520,18 @@ const mSigSDK = (function () {
     const cacheName = "getMutationalSignatureActivityOptions";
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
+/**
+
+Retrieves mutational signature landscape data from the mutational-signatures API.
+@async
+@function
+@param {string} [study="PCAWG"] - The name of the study. Default value is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data. Default value is "WGS".
+@param {string} [cancerType=""] - The name of the cancer type. Default value is an empty string.
+@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the signature set. Default value is "COSMIC_v3_Signatures_GRCh37_SBS96".
+@param {number} [numberOfResults=10] - The maximum number of results to be returned. Default value is 10.
+@returns {Promise<Object>} - A Promise that resolves to the JSON data of the mutational signature landscape.
+*/
 
   async function getMutationalSignatureActivityData(
     study = "PCAWG",
@@ -1207,6 +1223,61 @@ initialized to zeros.
     }
     return data;
   }
+  
+  // This function plots the mutational spectrum mutational count as boxplots for each cancer type for the given dataset.
+
+  async function plotProjectMutationalBurdenByCancerType(project, divID){
+
+
+    // Loop through all the cancertypes in project and create a trace for each cancer type and add it to the data array
+
+    const cancerTypes = Object.keys(project);
+
+    const data = [];
+
+    const boxColor = {};
+    const allColors = linspace(0, 360, cancerTypes.length);
+    for( var i = 0; i < cancerTypes.length - 1;  i++ ){
+      var result = 'hsl('+ allColors[i] +',50%'+',50%)';
+      boxColor[cancerTypes[i]] = result;
+    }
+
+    for (let cancerType of cancerTypes){
+
+      const cancerTypeData = Object.values(project[cancerType]);
+
+      const trace = {
+        // x: Object.keys(project[cancerType]),
+        y: Object.values(cancerTypeData).map((e) => Math.log(Object.values(Object.values(e)[0]).reduce((a,b)=> a+b, 0))),
+        type: "box",
+        name: cancerType,
+        marker: {
+          color: boxColor[cancerType],
+        },
+        boxpoints: 'Outliers',
+      };
+
+      data.push(trace);
+
+    }
+
+    const layout = {
+      title: `Mutational Burden by Cancer Type`,
+      xaxis: {
+        title: "Cancer Type",
+        type:"category"
+
+      },
+      yaxis: {
+        title: "Log (Number of Mutations)",
+      },
+      barmode: "stack",
+    };
+
+    Plotly.default.newPlot(divID, data, layout);
+
+
+  }
 
   //#endregion
 
@@ -1689,6 +1760,7 @@ async function plotDatasetMutationalSignaturesExposure(exposureData, divID, rela
     plotForceDirectedTree,
     plotCosineSimilarityHeatMap,
     plotUMAPVisualization,
+    plotProjectMutationalBurdenByCancerType
   };
 
   const mSigPortal = {
