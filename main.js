@@ -387,7 +387,7 @@ const mSigSDK = (function () {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature?
     source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&matrix=96&signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
     const cacheName = "getMutationalSignaturesData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return extractMutationalSpectra(await (await fetchURLAndCache(cacheName, url)).json(), "signatureName") ;
   }
 
   async function getMutationalSignaturesSummary(
@@ -1673,7 +1673,7 @@ initialized to zeros.
       textposition: "inside",
       hole: 0.4,
       hoverinfo: "name + value",
-      type: "pie",
+      type: plotType,
     };
 
     let layout = {
