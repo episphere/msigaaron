@@ -16,14 +16,13 @@ const mSigSDK = (function () {
   // #region Miscellaneous Functions
 
   function linspace(a, b, n) {
-    return Array.from({length: n}, (_, i) => a + i * (b - a) / (n - 1));
+    return Array.from({ length: n }, (_, i) => a + (i * (b - a)) / (n - 1));
   }
-  
+
   // Deep copy an object
   function deepCopy(obj) {
     return JSON.parse(JSON.stringify(obj));
   }
-
 
   // Solve argmin_x || Ax - b ||_2 for x>=0. A is a matrix, b is a vector.
   // Output is a vector x with the same length as b. The rnrom is the residual || Ax - b ||^2.
@@ -370,7 +369,7 @@ const mSigSDK = (function () {
 
   //#region Mutational Signatures
 
-/**
+  /**
 
 Retrieves the mutational signature options from the specified API endpoint.
 @async
@@ -393,7 +392,7 @@ console.log(mutationalSignatures);
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
 
-/**
+  /**
 
 Retrieves mutational signatures data from the specified endpoint and returns it as JSON.
 @async
@@ -414,12 +413,17 @@ Retrieves mutational signatures data from the specified endpoint and returns it 
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature?
     source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&matrix=96&signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
     const cacheName = "getMutationalSignaturesData";
-    const unformattedData = await (await fetchURLAndCache(cacheName, url)).json();
-    const formattedData = extractMutationalSpectra(unformattedData, "signatureName");
+    const unformattedData = await (
+      await fetchURLAndCache(cacheName, url)
+    ).json();
+    const formattedData = extractMutationalSpectra(
+      unformattedData,
+      "signatureName"
+    );
     return unformattedData;
   }
 
-/**
+  /**
 
 Returns a summary of mutational signatures based on the provided signature set name and number of results.
 @async
@@ -445,7 +449,7 @@ console.log(summary);
 
   //#region Mutational Spectrum
 
-/**
+  /**
 
 Retrieves mutational spectrum options from the mutational signatures API.
 @async
@@ -456,8 +460,6 @@ Retrieves mutational spectrum options from the mutational signatures API.
 @param {number} [numberOfResults=10] - The number of results to retrieve. Defaults to 10.
 @returns {Promise<Object>} A Promise that resolves to the JSON response from the mutational signatures API.
 */
-
-
 
   async function getMutationalSpectrumOptions(
     study = "PCAWG",
@@ -470,7 +472,6 @@ Retrieves mutational spectrum options from the mutational signatures API.
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
 
-  
   /**
 
 Fetches mutational spectrum data from the Cancer Genomics Data Server API and returns it in a formatted way.
@@ -497,10 +498,12 @@ Fetches mutational spectrum data from the Cancer Genomics Data Server API and re
     const promises = [];
     let urls = [];
 
-    if (cancerType == null){
+    if (cancerType == null) {
       let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
 
-      let unformattedData = await (await fetchURLAndCache(cacheName, url)).json();
+      let unformattedData = await (
+        await fetchURLAndCache(cacheName, url)
+      ).json();
 
       return unformattedData;
     }
@@ -508,7 +511,9 @@ Fetches mutational spectrum data from the Cancer Genomics Data Server API and re
     if (samples === null) {
       let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
 
-      let unformattedData = await (await fetchURLAndCache(cacheName, url)).json();
+      let unformattedData = await (
+        await fetchURLAndCache(cacheName, url)
+      ).json();
       let formattedData = extractMutationalSpectra(unformattedData, "sample");
       return unformattedData;
     } else {
@@ -536,8 +541,7 @@ Fetches mutational spectrum data from the Cancer Genomics Data Server API and re
     return data;
   }
 
-
-/**
+  /**
 
 Fetches the mutational spectrum summary from the mutational signatures API based on the given parameters.
 @async
@@ -565,7 +569,7 @@ Fetches the mutational spectrum summary from the mutational signatures API based
 
   //#region Mutational Signature Association
 
- /**
+  /**
 
 Fetches the mutational signature association options from the API endpoint
 @async
@@ -598,8 +602,6 @@ Retrieves mutational signature association data from a specified cancer study us
 @param {number} [numberOfResults=10] - The maximum number of results to return. Default is 10.
 @returns {Promise<object>} - A Promise that resolves to the JSON response containing the mutational signature association data.
 */
-
-
 
   async function getMutationalSignatureAssociationData(
     study = "PCAWG",
@@ -635,7 +637,7 @@ Retrieves a list of mutational signature activity options from the mutational si
     const cacheName = "getMutationalSignatureActivityOptions";
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
-/**
+  /**
 
 Retrieves mutational signature landscape data from the mutational-signatures API.
 @async
@@ -978,7 +980,7 @@ Retrieves mutational signature etiology data from the Cancer Genomics Research L
     }
     return dictionary;
   }
-/**
+  /**
 
 @function obtainICGCDataMAF
 @async
@@ -1162,7 +1164,7 @@ initialized to zeros.
     }
   }
 
-/**
+  /**
 
 Converts patient mutation data into mutational spectra.
 @async
@@ -1249,7 +1251,7 @@ Converts patient mutation data into mutational spectra.
   function isNumeric(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
-/**
+  /**
 
 Convert whole-genome sequencing (WGS) MAFs to panel MAFs by downsampling the WGS data based on a panel file.
 
@@ -1324,7 +1326,6 @@ Convert whole-genome sequencing (WGS) MAFs to panel MAFs by downsampling the WGS
     });
   }
 
-
   async function convertWGStoPanel(WgMAFs, panelDf) {
     // Check if the panel file is an array of arrays or a file path. If it is a file path, read the file and convert it to an array of arrays
     let bed_file;
@@ -1345,7 +1346,7 @@ Convert whole-genome sequencing (WGS) MAFs to panel MAFs by downsampling the WGS
 
   //#region Plot the summary of a dataset
 
-/**
+  /**
 
 Generates a mutational spectrum summary plot and displays it in a given HTML div element.
 @async
@@ -1433,9 +1434,8 @@ Generates a mutational spectrum summary plot and displays it in a given HTML div
     }
     return data;
   }
-  
-  // This function plots the mutational spectrum mutational count as boxplots for each cancer type for the given dataset.
 
+  // This function plots the mutational spectrum mutational count as boxplots for each cancer type for the given dataset.
 
   /**
 
@@ -1449,14 +1449,14 @@ Plots the mutational burden by cancer type for a given project.
 // Example usage:
 plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
 */
-  async function plotProjectMutationalBurdenByCancerType(project, divID){
-
-    project = groupBy(project, "cancer")
-    Object.keys(project).forEach(function(key, index) {
+  async function plotProjectMutationalBurdenByCancerType(project, divID) {
+    project = groupBy(project, "cancer");
+    Object.keys(project).forEach(function (key, index) {
       project[key] = groupBy(project[key], "sample");
-      Object.keys(project[key]).forEach(function(patient, index) {
-        project[key][patient] = Object.values(extractMutationalSpectra(project[key][patient], "sample"))[0];
-
+      Object.keys(project[key]).forEach(function (patient, index) {
+        project[key][patient] = Object.values(
+          extractMutationalSpectra(project[key][patient], "sample")
+        )[0];
       });
     });
 
@@ -1468,36 +1468,35 @@ plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
 
     const boxColor = {};
     const allColors = linspace(0, 360, cancerTypes.length);
-    for( var i = 0; i < cancerTypes.length - 1;  i++ ){
-      var result = 'hsl('+ allColors[i] +',50%'+',50%)';
+    for (var i = 0; i < cancerTypes.length - 1; i++) {
+      var result = "hsl(" + allColors[i] + ",50%" + ",50%)";
       boxColor[cancerTypes[i]] = result;
     }
 
-    for (let cancerType of cancerTypes){
-
+    for (let cancerType of cancerTypes) {
       const cancerTypeData = Object.values(project[cancerType]);
 
       const trace = {
         // x: Object.keys(project[cancerType]),
-        y: Object.values(cancerTypeData).map((e) => Math.log(Object.values(e).reduce((a,b)=> a+b, 0))),
+        y: Object.values(cancerTypeData).map((e) =>
+          Math.log(Object.values(e).reduce((a, b) => a + b, 0))
+        ),
         type: "box",
         name: cancerType,
         marker: {
           color: boxColor[cancerType],
         },
-        boxpoints: 'Outliers',
+        boxpoints: "Outliers",
       };
 
       data.push(trace);
-
     }
 
     const layout = {
       title: `Mutational Burden by Cancer Type`,
       xaxis: {
         title: "Cancer Type",
-        type:"category"
-
+        type: "category",
       },
       yaxis: {
         title: "Log (Number of Mutations)",
@@ -1506,14 +1505,12 @@ plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
     };
 
     Plotly.default.newPlot(divID, data, layout);
-
-
   }
 
   //#endregion
 
   //#region Plot a patient's mutational spectra
-/**
+  /**
 
 Renders a plot of the mutational spectra for one or more patients in a given div element ID using Plotly.
 @async
@@ -1828,8 +1825,8 @@ Plots a force directed tree of the patients in the study based on their mutation
 
   //#endregion
 
-  //#region Visualizes a set of mutational spectra using UMAP. 
-  
+  //#region Visualizes a set of mutational spectra using UMAP.
+
   /**
 
 Plots a UMAP visualization of the input data.
@@ -1865,14 +1862,16 @@ Plots a UMAP visualization of the input data.
     let plotType = nComponents === 3 ? "scatter3d" : "scatter";
     let axisLabels = nComponents === 3 ? ["X", "Y", "Z"] : ["X", "Y"];
 
-    let trace = [{
-      x: embeddings.map((d) => d[0]),
-      y: embeddings.map((d) => d[1]),
-      text: Object.keys(data),
-      mode: "markers",
-      type: plotType,
-      marker: { size: 6 },
-    }];
+    let trace = [
+      {
+        x: embeddings.map((d) => d[0]),
+        y: embeddings.map((d) => d[1]),
+        text: Object.keys(data),
+        mode: "markers",
+        type: plotType,
+        marker: { size: 6 },
+      },
+    ];
 
     if (nComponents === 3) {
       trace[0].z = embeddings.map((d) => d[2]);
@@ -1880,11 +1879,11 @@ Plots a UMAP visualization of the input data.
       trace.push({
         alphahull: 7,
         opacity: 0.1,
-        type: 'mesh3d',
+        type: "mesh3d",
         x: embeddings.map((d) => d[0]),
         y: embeddings.map((d) => d[1]),
         z: embeddings.map((d) => d[2]),
-    })
+      });
     }
 
     let layout = {
@@ -1905,6 +1904,16 @@ Plots a UMAP visualization of the input data.
   //#endregion
 
   //#region Signature Fitting
+
+  /**
+
+Fits mutational spectra to mutational signatures using non-negative least squares (NNLS) regression.
+@async
+@function fitMutationalSpectraToSignatures
+@param {Object} mutationalSignatures - An object containing mutational signature data with signature names as keys and nested objects containing signature values as values.
+@param {Object} mutationalSpectra - An object containing mutational spectra data with sample names as keys and nested objects containing spectra values as values.
+@returns {Promise<Object>} - A Promise that resolves to an object with sample names as keys and nested objects containing signature exposure values as values.
+*/
 
   // This function fits the mutational spectra of a set of samples to a set of mutational signatures
 
@@ -1939,10 +1948,23 @@ Plots a UMAP visualization of the input data.
     return results;
   }
 
+  /**
+
+Plots mutational signature exposure data as a pie chart.
+@async
+@function plotPatientMutationalSignaturesExposure
+@param {Object} exposureData - An object containing mutational signature exposure data.
+@param {string} divID - The ID of the HTML div element in which to display the plot.
+@param {string} sample - The name of the sample being plotted.
+@returns {Object} - The data used to create the plot.
+*/
+
   // This function plots the exposure of a set of samples to a set of mutational signatures
-
-  async function plotPatientMutationalSignaturesExposure(exposureData, divID, sample) {
-
+  async function plotPatientMutationalSignaturesExposure(
+    exposureData,
+    divID,
+    sample
+  ) {
     let dataset = deepCopy(exposureData);
 
     const rnorm = dataset["rnorm"];
@@ -1969,9 +1991,23 @@ Plots a UMAP visualization of the input data.
     return data;
   }
 
-  
-async function plotDatasetMutationalSignaturesExposure(exposureData,  divID, relative = true, datasetName ="PCAWG") {
-    
+  /**
+
+Plot the mutational signature exposure data for the given dataset using Plotly heatmap visualization.
+@async
+@function
+@param {Object} exposureData - An object containing mutational signature exposure data for each sample.
+@param {string} divID - The ID of the HTML div element where the heatmap plot should be rendered.
+@param {boolean} [relative=true] - A boolean indicating whether to normalize the exposure data by total count for each sample.
+@param {string} [datasetName="PCAWG"] - A string indicating the name of the dataset being plotted.
+@returns {Object} - An object representing the data plotted in the heatmap.
+*/
+  async function plotDatasetMutationalSignaturesExposure(
+    exposureData,
+    divID,
+    relative = true,
+    datasetName = "PCAWG"
+  ) {
     let dataset = deepCopy(exposureData);
     // Remove the rnorm values from each sample of the exposure data
 
@@ -2008,7 +2044,6 @@ async function plotDatasetMutationalSignaturesExposure(exposureData,  divID, rel
       yaxis: {
         title: "Mutational Signatures",
         nticks: Object.keys(dataset).length,
-
       },
       height: 800,
     };
@@ -2016,9 +2051,7 @@ async function plotDatasetMutationalSignaturesExposure(exposureData,  divID, rel
     Plotly.default.newPlot(divID, [data], layout);
 
     return data;
-
   }
-
 
   //#endregion
 
@@ -2045,7 +2078,7 @@ async function plotDatasetMutationalSignaturesExposure(exposureData,  divID, rel
     plotForceDirectedTree,
     plotCosineSimilarityHeatMap,
     plotUMAPVisualization,
-    plotProjectMutationalBurdenByCancerType
+    plotProjectMutationalBurdenByCancerType,
   };
 
   const mSigPortal = {
@@ -2060,8 +2093,8 @@ async function plotDatasetMutationalSignaturesExposure(exposureData,  divID, rel
   };
 
   const tools = {
-    groupBy
-  }
+    groupBy,
+  };
 
   //#endregion
 
