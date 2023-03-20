@@ -1,0 +1,4 @@
+[submodule "nci-webtools-dceg-mSigPortal"]
+	path = nci-webtools-dceg-mSigPortal
+	url = https://github.com/CBIIT/nci-webtools-dceg-mSigPortal.git
+	branch = msigportal-1.0.0-dev
