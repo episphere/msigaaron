@@ -10,7 +10,7 @@ import * as am5hierarchy from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/
 
 import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.3.7/themes/Animated.js/+esm";
 
-import { default as plotMutationalProfile } from "./scripts/js/controls/plotly/mutationalProfiles/sbs96.js";
+import { default as plotMutationalProfile } from "./mSigPortalScripts/js/controls/plotly/mutationalProfiles/sbs96.js";
 
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
