@@ -5,22 +5,21 @@ $(document).ready(function () {
 });
 
 // API Arguments
-document
-  .querySelector("#endpoint-select")
-  .addEventListener("change", function () {
+$("#endpoint-select")
+  .change(function () {
     const endpoint = this.value;
     let paramsSection = $("#params-section");
     paramsSection.innerHTML = ""; // clear the previous parameters
-
+    console.log(endpoint);
     switch (endpoint) {
       case "getMutationalSignaturesOptions":
-        paramsSection.load("APIArgumentTemplates/basicTemplateOptions.html");
+        paramsSection.load("./APIArgumentTemplates/basicTemplateOptions.html");
         break;
       case "getMutationalSignaturesData":
-        paramsSection.load("APIArgumentTemplates/basicTemplateData.html");
+        paramsSection.load("./APIArgumentTemplates/basicTemplateData.html");
         break;
       case "getMutationalSignaturesSummary":
-        paramsSection.load("APIArgumentTemplates/basicTemplateSummary.html");
+        paramsSection.load("./APIArgumentTemplates/basicTemplateSummary.html");
         break;
     }
   });

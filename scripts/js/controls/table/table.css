@@ -1,0 +1,25 @@
+.table thead th {
+  border-bottom: 1px solid #ddd;
+  font-size: 1rem;
+}
+.table td {
+  overflow-x: auto;
+  word-wrap: break-word;
+}
+
+.table.table-striped tbody tr:nth-of-type(odd) {
+  background-color: #fafafa;
+}
+
+.pagination .page-item .page-link {
+  color: #595959;
+}
+.pagination .page-item.active .page-link {
+  background-color: transparent;
+  color: rgb(0, 126, 167);
+  font-weight: 600;
+  text-decoration: underline;
+}
+.pagination .page-link:focus {
+  box-shadow: none;
+}/*# sourceMappingURL=table.css.map */
