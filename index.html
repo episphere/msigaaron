@@ -29,10 +29,14 @@
 </head>
 
 <body>
+    <div class="page-title">
+        <input id="toggle-nav" type="image" src="./Icons/icons8-menu-rounded-30.png" style = "display: inline-block;"/>
 
-    <div id="main">
+        <h1 style = "display: inline-block;">mSigSDK Home </h1>
+    </div>
+    
+    <div id="container">
 
-        <h1 class="page-title">mSigSDK Home</h1>
 
         <section class="container py-5">
             <h1 class="display-3 mb-5">mSigSDK Visualizations</h1>
@@ -57,10 +61,11 @@
                 src="https://observablehq.com/embed/@aaronge-2020/icgc-msigsdk?cell=*"></iframe>
         </section>
 
-        
-        <section class="container mt-5">
-            <h2 class="text-center">Test an API</h2>
-            <form id="api-form-signatures" class="mt-5 mb-5">
+
+        <section class="container py-5 " >
+
+            <h1 class="display-3 mb-5" style="display:block;">Test an API</h1>
+            <form id="api-form-signatures" class="mt-5 mb-5" style="display:block; ">
                 <div class="form-group">
                     <label for="endpoint-select">Endpoint:</label>
                     <select class="form-control" id="endpoint-select">
@@ -97,24 +102,12 @@
         </section>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     </div>
 
-    <nav>
-        <h2><a href="index.html">Home</a></h2>
+    <nav id="my-nav">
+
+        <h2 style = "display: inline-block;"><a href="index.html">Home</a></h2>
+
         <h3>Namespaces</h3>
         <ul>
             <li><a href="ICGC.html">ICGC</a></li>
@@ -123,10 +116,8 @@
         </ul>
         <h3>Global</h3>
         <ul>
-            <li><a href="global.html#fitMutationalSpectraToSignatures">fitMutationalSpectraToSignatures</a></li>
-            <li><a href="global.html#getMutationalSignatureLandscapeData">getMutationalSignatureLandscapeData</a></li>
-            <li><a
-                    href="global.html#plotPatientMutationalSignaturesExposure">plotPatientMutationalSignaturesExposure</a>
+            <li><a href="global.html#fitMutationalSpectraToSignatures">fitMutationalSpectra</a></li>
+            <li><a href="global.html#plotPatientMutationalSignaturesExposure">plotExposures</a>
             </li>
         </ul>
     </nav>

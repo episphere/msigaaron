@@ -1,8 +1,16 @@
-
-
 $(document).ready(function () {
   populateAPIDropdown();
 });
+
+const nav = document.getElementById("my-nav");
+const toggleButton = document.getElementById("toggle-nav");
+const container = document.querySelector(".container");
+
+toggleButton.addEventListener("click", () => {
+  nav.classList.toggle("show");
+  container.classList.toggle("shift");
+});
+
 
 // API Arguments
 $("#endpoint-select")

@@ -367,17 +367,17 @@ const mSigSDK = (function () {
 
   // #endregion
 
-/**
- * @namespace mSigPortalData
- */
+  /**
+   * @namespace mSigPortalData
+   */
 
-/**
- * @namespace mSigPortalPlots
- */
+  /**
+   * @namespace mSigPortalPlots
+   */
 
-/**
- * @namespace ICGC
- */
+  /**
+   * @namespace ICGC
+   */
 
   //#region Mutational Signatures
 
