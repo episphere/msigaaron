@@ -10,7 +10,7 @@ import * as am5hierarchy from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/
 
 import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.3.7/themes/Animated.js/+esm";
 
-import { default as plotMutationalProfile } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs96.js";
+import { default as plotMutationalProfile } from "./controls/plotly/mutationalProfiles/sbs96.js";
 
 
 // import * as mSigPortalPlotting from "./index.js";
