@@ -490,17 +490,17 @@ Retrieves mutational spectrum options from the mutational signatures API.
 
   /**
 
-Fetches mutational spectrum data from the Cancer Genomics Data Server API and returns it in a formatted way.
-@async
-@function getMutationalSpectrumData
-@memberof mSigPortalData
-@param {string} [study="PCAWG"] - The study identifier.
-@param {string[]|null} [samples=null] - The sample identifier(s) to query data for.
-@param {string} [genomeDataType="WGS"] - The genome data type identifier.
-@param {string} [cancerType="Lung-AdenoCA"] - The cancer type identifier.
-@param {string} [mutationType="SBS"] - The mutation type identifier.
-@param {number} [matrixSize=96] - The size of the mutational spectrum matrix.
-@returns {Promise} - A promise that resolves to the formatted mutational spectrum data.
+* Fetches mutational spectrum data from the Cancer Genomics Data Server API and returns it in a formatted way.
+* @async
+* @function getMutationalSpectrumData
+* @memberof mSigPortalData
+* @param {string} [study="PCAWG"] - The study identifier.
+* @param {string[]|null} [samples=null] - The sample identifier(s) to query data for.
+* @param {string} [genomeDataType="WGS"] - The genome data type identifier.
+* @param {string} [cancerType="Lung-AdenoCA"] - The cancer type identifier.
+* @param {string} [mutationType="SBS"] - The mutation type identifier.
+* @param {number} [matrixSize=96] - The size of the mutational spectrum matrix.
+* @returns {Promise} - A promise that resolves to the formatted mutational spectrum data.
 */
   async function getMutationalSpectrumData(
     study = "PCAWG",
