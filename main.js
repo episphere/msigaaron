@@ -1528,7 +1528,7 @@ plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
         title: "Log (Number of Mutations)",
       },
       barmode: "stack",
-      height:800,
+      height:600,
     };
 
     Plotly.default.newPlot(divID, data, layout);
