@@ -367,6 +367,18 @@ const mSigSDK = (function () {
 
   // #endregion
 
+/**
+ * @namespace mSigPortalData
+ */
+
+/**
+ * @namespace mSigPortalPlots
+ */
+
+/**
+ * @namespace ICGC
+ */
+
   //#region Mutational Signatures
 
   /**
@@ -374,6 +386,7 @@ const mSigSDK = (function () {
 Retrieves the mutational signature options from the specified API endpoint.
 @async
 @function
+@memberof mSigPortalData
 @name getMutationalSignaturesOptions
 @param {string} [genomeDataType="WGS"] - The genome data type to use. Defaults to "WGS".
 @param {string} [mutationType="SBS"] - The mutation type to use. Defaults to "SBS".
@@ -397,6 +410,7 @@ console.log(mutationalSignatures);
 Retrieves mutational signatures data from the specified endpoint and returns it as JSON.
 @async
 @function
+@memberof mSigPortalData
 @param {string} [genomeDataType="WGS"] - The type of genome data to use. Defaults to "WGS".
 @param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the signature set to use. Defaults to "COSMIC_v3_Signatures_GRCh37_SBS96".
 @param {string} [mutationType="SBS"] - The type of mutation to analyze. Defaults to "SBS".
@@ -428,6 +442,7 @@ Retrieves mutational signatures data from the specified endpoint and returns it 
 Returns a summary of mutational signatures based on the provided signature set name and number of results.
 @async
 @function
+@memberof mSigPortalData
 @param {number} [numberofResults=10] - The number of results to retrieve. Defaults to 10 if not provided.
 @param {string} [signatureSetName="COSMIC_v3.3_Signatures"] - The name of the signature set to retrieve. Defaults to "COSMIC_v3.3_Signatures" if not provided.
 @returns {Promise<Object>} - A Promise that resolves to an object representing the mutational signature summary.
@@ -453,6 +468,7 @@ console.log(summary);
 
 Retrieves mutational spectrum options from the mutational signatures API.
 @async
+@memberof mSigPortalData
 @function
 @param {string} [study="PCAWG"] - The name of the study to retrieve options for. Defaults to "PCAWG".
 @param {string} [genomeDataType="WGS"] - The genome data type to retrieve options for. Defaults to "WGS".
@@ -477,6 +493,7 @@ Retrieves mutational spectrum options from the mutational signatures API.
 Fetches mutational spectrum data from the Cancer Genomics Data Server API and returns it in a formatted way.
 @async
 @function getMutationalSpectrumData
+@memberof mSigPortalData
 @param {string} [study="PCAWG"] - The study identifier.
 @param {string[]|null} [samples=null] - The sample identifier(s) to query data for.
 @param {string} [genomeDataType="WGS"] - The genome data type identifier.
@@ -546,6 +563,7 @@ Fetches mutational spectrum data from the Cancer Genomics Data Server API and re
 Fetches the mutational spectrum summary from the mutational signatures API based on the given parameters.
 @async
 @function
+@memberof mSigPortalData
 @param {string} [study="PCAWG"] - The name of the cancer genome study. Default is "PCAWG".
 @param {string} [genomeDataType="WGS"] - The type of genomic data used. Default is "WGS".
 @param {string} [cancerType="Lung-AdenoCA"] - The type of cancer. Default is "Lung-AdenoCA".
@@ -574,6 +592,7 @@ Fetches the mutational spectrum summary from the mutational signatures API based
 Fetches the mutational signature association options from the API endpoint
 @async
 @function
+@memberof mSigPortalData
 @param {string} [study="PCAWG"] - The name of the study. Defaults to "PCAWG".
 @param {string} [genomeDataType="WGS"] - The type of genome data. Defaults to "WGS".
 @param {number} [numberOfResults=10] - The number of results to return. Defaults to 10.
@@ -596,6 +615,7 @@ Fetches the mutational signature association options from the API endpoint
 Retrieves mutational signature association data from a specified cancer study using the provided parameters.
 @async
 @function
+@memberof mSigPortalData
 @param {string} [study="PCAWG"] - The name of the cancer study. Default is "PCAWG".
 @param {string} [genomeDataType="WGS"] - The type of genome data used. Default is "WGS".
 @param {string} [cancerType="Biliary-AdenoCA"] - The type of cancer. Default is "Biliary-AdenoCA".
@@ -623,6 +643,7 @@ Retrieves mutational signature association data from a specified cancer study us
 Retrieves a list of mutational signature activity options from the mutational signatures API.
 @async
 @function getMutationalSignatureActivityOptions
+@memberof mSigPortalData
 @param {string} [study="PCAWG"] - The name of the study to retrieve mutational signature activity options for. Defaults to "PCAWG".
 @param {string} [genomeDataType="WGS"] - The genome data type to retrieve mutational signature activity options for. Defaults to "WGS".
 @param {number} [numberOfResults=10] - The number of results to retrieve. Defaults to 10.
@@ -642,6 +663,7 @@ Retrieves a list of mutational signature activity options from the mutational si
 Retrieves mutational signature landscape data from the mutational-signatures API.
 @async
 @function
+@memberof mSigPortalData
 @param {string} [study="PCAWG"] - The name of the study. Default value is "PCAWG".
 @param {string} [genomeDataType="WGS"] - The type of genome data. Default value is "WGS".
 @param {string} [cancerType=""] - The name of the cancer type. Default value is an empty string.
@@ -695,6 +717,7 @@ Retrieves mutational signature landscape data from an API endpoint.
 Retrieves the etiology options for a given mutational signature from the Cancer.gov Mutational Signatures API.
 @async
 @function
+@memberof mSigPortalData
 @param {string} [study="PCAWG"] - The name of the study to retrieve etiology options for. Defaults to "PCAWG".
 @param {string} [genomeDataType="WGS"] - The type of genome data to retrieve etiology options for. Defaults to "WGS".
 @param {string} [signatureName="SBS3"] - The name of the mutational signature to retrieve etiology options for. Defaults to "SBS3".
@@ -726,6 +749,7 @@ cancer_type: The cancer type.
 Retrieves mutational signature etiology data from the Cancer Genomics Research Laboratory (CGR) website.
 @async
 @function getMutationalSignatureEtiologyData
+@memberof mSigPortalData
 @param {string} [study="PCAWG"] - The study name. Default is "PCAWG".
 @param {string} [genomeDataType="WGS"] - The genome data type. Default is "WGS".
 @param {string} [signatureName="SBS3"] - The signature name. Default is "SBS3".
@@ -984,6 +1008,7 @@ Retrieves mutational signature etiology data from the Cancer Genomics Research L
 
 @function obtainICGCDataMAF
 @async
+@memberof ICGC
 @description A function that retrieves ICGC (International Cancer Genome Consortium) mutation data in MAF (Mutation Annotation Format) format from local cache or external source.
 @param {string[]} [projects=["BRCA-US"]] An array of project codes to retrieve data from. Defaults to ["BRCA-US"].
 @param {string} [datatype="ssm"] The type of mutation data to retrieve. Defaults to "ssm".
@@ -1169,6 +1194,7 @@ initialized to zeros.
 Converts patient mutation data into mutational spectra.
 @async
 @function convertMatrix
+@memberof ICGC
 @param {Array} data - The patient mutation data to be converted.
 @param {number} [batch_size=100] - The number of mutations to process in each batch.
 @returns {Object} - The mutational spectra of each patient in an object.
@@ -1253,19 +1279,14 @@ Converts patient mutation data into mutational spectra.
   }
   /**
 
-Convert whole-genome sequencing (WGS) MAFs to panel MAFs by downsampling the WGS data based on a panel file.
-
+Converts whole-genome variant frequencies (WgMAFs) to panel variant frequencies.
 @async
-
-@function
-
-@param {Array<Array>} WgMAFs - Array of arrays containing WGS MAF data
-
-@param {Array<Array>|string} panelDf - Panel file represented as an array of arrays or a file path to read the panel file
-
-@returns {Promise<Array<Array>>} - Promise that resolves to an array of arrays containing panel MAF data
-*/
-
+@function convertWGStoPanel
+@memberof ICGC
+@param {Array<Array<number>>} WgMAFs - An array of arrays containing WgMAFs.
+@param {Array<Array<number>>|string} panelDf - An array of arrays or a string representing the file path of the panel variant frequencies.
+@returns {Promise<Array<Array<number>>>} An array of arrays containing panel variant frequencies.
+  */
   function downsampleWGSArray(WGSArray, panelArray) {
     const includedRows = [];
 
@@ -1351,6 +1372,7 @@ Convert whole-genome sequencing (WGS) MAFs to panel MAFs by downsampling the WGS
 Generates a mutational spectrum summary plot and displays it in a given HTML div element.
 @async
 @function
+@memberof mSigPortalPlots
 @param {string} [studyName="PCAWG"] - The name of the cancer genomics study to use. Default is "PCAWG".
 @param {string} [genomeDataType="WGS"] - The type of genomic data to use. Default is "WGS".
 @param {string} [cancerTypeOrGroup="Lung-AdenoCA"] - The cancer type or group to display. Default is "Lung-AdenoCA".
@@ -1442,6 +1464,7 @@ Generates a mutational spectrum summary plot and displays it in a given HTML div
 Plots the mutational burden by cancer type for a given project.
 @async
 @function plotProjectMutationalBurdenByCancerType
+@memberof mSigPortalPlots
 @param {Object} project - An object containing mutational data for different cancer types.
 @param {string} divID - The ID of the div where the plot should be displayed.
 @returns {Promise} - A Promise that resolves when the plot is displayed.
@@ -1515,6 +1538,7 @@ plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
 Renders a plot of the mutational spectra for one or more patients in a given div element ID using Plotly.
 @async
 @function plotPatientMutationalSpectrum
+@memberof mSigPortalPlots
 @param {Object} mutationalSpectra - An object containing the mutational spectra data for one or more patients.
 @param {number} [matrixSize=96] - The size of the plot matrix. Defaults to 96.
 @param {string} [divID='mutationalSpectrumMatrix'] - The ID of the div element to render the plot in. Defaults to 'mutationalSpectrumMatrix'.
@@ -1664,6 +1688,7 @@ Renders a plot of the mutational spectra for one or more patients in a given div
 This function creates a heatmap using the cosine similarity matrix for the given grouped data.
 @async
 @function
+@memberof mSigPortalPlots
 @param {Object} groupedData - An object containing grouped data where each key is a sample name and its value is an object containing sample data.
 @param {string} [studyName="PCAWG"] - The name of the study. Default value is "PCAWG".
 @param {string} [genomeDataType="WGS"] - The type of genomic data used. Default value is "WGS".
@@ -1721,6 +1746,7 @@ This function creates a heatmap using the cosine similarity matrix for the given
 Plots a force directed tree of the patients in the study based on their mutational spectra.
 @async
 @function plotForceDirectedTree
+@memberof mSigPortalPlots
 @param {Object} groupedData - An object containing patient data grouped by mutational spectra.
 @param {string} [studyName="PCAWG"] - The name of the study. Defaults to "PCAWG".
 @param {string} [genomeDataType="WGS"] - The type of genome data. Defaults to "WGS".
@@ -1832,6 +1858,7 @@ Plots a force directed tree of the patients in the study based on their mutation
 Plots a UMAP visualization of the input data.
 @async
 @function
+@memberof mSigPortalPlots
 @param {object} data - The input data to visualize.
 @param {string} [datasetName="PCAWG"] - The name of the dataset being visualized.
 @param {string} divID - The ID of the HTML div element to plot the visualization in.
