@@ -437,7 +437,7 @@ const mSigSDK = (function () {
       let formattedData = groupBy(unformattedData, "cancer")
       Object.keys(formattedData).forEach(function(key, index) {
         formattedData[key] = groupBy(formattedData[key], "sample");
-        Object.keys(formattedData[key]).foEach(function(patient, index) {
+        Object.keys(formattedData[key]).forEach(function(patient, index) {
           formattedData[key][patient] = Object.values(extractMutationalSpectra(formattedData[key][patient], "sample"))[0];
 
         });
@@ -585,7 +585,7 @@ Retrieves mutational signature landscape data from the mutational-signatures API
     cancerType = "",
     numberOfResults = 10
   ) {
-    url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_etiology?study=${study}&strategy=${genomeDataType}&signatureName=${signatureName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_etiology?study=${study}&strategy=${genomeDataType}&signatureName=${signatureName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
     const cacheName = "getMutationalSignatureEtiologyData";
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
@@ -1400,6 +1400,8 @@ initialized to zeros.
   // This function extracts the mutational spectra out of the mSigPortal API call
 
   function extractMutationalSpectra(data, groupName = "sample") {
+    data = data.flat();
+
     // Group all of the dictionaries in the data array by sample name
     let groupedData = groupBy(data, groupName);
 
