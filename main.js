@@ -1523,6 +1523,7 @@ plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
       xaxis: {
         title: "Cancer Type",
         type: "category",
+        automargin: true,
       },
       yaxis: {
         title: "Log (Number of Mutations)",
