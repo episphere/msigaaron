@@ -1,4 +1,5 @@
 mSigSDK = await (await import("./main.js")).mSigSDK;
+getMutationalSignatureEtiologyOptions = mSigSDK.mSigPortal.mSigPortalData.getMutationalSignatureEtiologyOptions()
 
 cancerType = "Lung-AdenoCA";
 mutationalSignatures = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSignaturesData("WGS", "COSMIC_v3_Signatures_GRCh37_SBS96", "SBS", 10000)

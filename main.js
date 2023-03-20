@@ -370,6 +370,19 @@ const mSigSDK = (function () {
 
   //#region Mutational Signatures
 
+/**
+
+Retrieves the mutational signature options from the specified API endpoint.
+@async
+@function
+@name getMutationalSignaturesOptions
+@param {string} [genomeDataType="WGS"] - The genome data type to use. Defaults to "WGS".
+@param {string} [mutationType="SBS"] - The mutation type to use. Defaults to "SBS".
+@returns {Promise} A Promise that resolves to the mutational signature options in JSON format.
+@example
+const mutationalSignatures = await getMutationalSignaturesOptions("WGS", "SBS");
+console.log(mutationalSignatures);
+*/
   async function getMutationalSignaturesOptions(
     genomeDataType = "WGS",
     mutationType = "SBS"
@@ -379,6 +392,18 @@ const mSigSDK = (function () {
     const cacheName = "getMutationalSignaturesOptions";
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
+
+/**
+
+Retrieves mutational signatures data from the specified endpoint and returns it as JSON.
+@async
+@function
+@param {string} [genomeDataType="WGS"] - The type of genome data to use. Defaults to "WGS".
+@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the signature set to use. Defaults to "COSMIC_v3_Signatures_GRCh37_SBS96".
+@param {string} [mutationType="SBS"] - The type of mutation to analyze. Defaults to "SBS".
+@param {number} [numberofResults=10] - The number of results to retrieve. Defaults to 10.
+@returns {Promise<Object>} - A Promise that resolves to the unformatted mutational signatures data as JSON.
+*/
 
   async function getMutationalSignaturesData(
     genomeDataType = "WGS",
@@ -394,6 +419,20 @@ const mSigSDK = (function () {
     return unformattedData;
   }
 
+/**
+
+Returns a summary of mutational signatures based on the provided signature set name and number of results.
+@async
+@function
+@param {number} [numberofResults=10] - The number of results to retrieve. Defaults to 10 if not provided.
+@param {string} [signatureSetName="COSMIC_v3.3_Signatures"] - The name of the signature set to retrieve. Defaults to "COSMIC_v3.3_Signatures" if not provided.
+@returns {Promise<Object>} - A Promise that resolves to an object representing the mutational signature summary.
+@throws {Error} - Throws an error if there was an issue fetching the mutational signature summary.
+@example
+const summary = await getMutationalSignaturesSummary(20, "COSMIC_v3.3_Signatures");
+console.log(summary);
+*/
+
   async function getMutationalSignaturesSummary(
     numberofResults = 10,
     signatureSetName = "COSMIC_v3.3_Signatures"
@@ -406,6 +445,20 @@ const mSigSDK = (function () {
 
   //#region Mutational Spectrum
 
+/**
+
+Retrieves mutational spectrum options from the mutational signatures API.
+@async
+@function
+@param {string} [study="PCAWG"] - The name of the study to retrieve options for. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The genome data type to retrieve options for. Defaults to "WGS".
+@param {string} [cancerType="Lung-AdenoCA"] - The cancer type to retrieve options for. Defaults to "Lung-AdenoCA".
+@param {number} [numberOfResults=10] - The number of results to retrieve. Defaults to 10.
+@returns {Promise<Object>} A Promise that resolves to the JSON response from the mutational signatures API.
+*/
+
+
+
   async function getMutationalSpectrumOptions(
     study = "PCAWG",
     genomeDataType = "WGS",
@@ -417,6 +470,20 @@ const mSigSDK = (function () {
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
 
+  
+  /**
+
+Fetches mutational spectrum data from the Cancer Genomics Data Server API and returns it in a formatted way.
+@async
+@function getMutationalSpectrumData
+@param {string} [study="PCAWG"] - The study identifier.
+@param {string[]|null} [samples=null] - The sample identifier(s) to query data for.
+@param {string} [genomeDataType="WGS"] - The genome data type identifier.
+@param {string} [cancerType="Lung-AdenoCA"] - The cancer type identifier.
+@param {string} [mutationType="SBS"] - The mutation type identifier.
+@param {number} [matrixSize=96] - The size of the mutational spectrum matrix.
+@returns {Promise} - A promise that resolves to the formatted mutational spectrum data.
+*/
   async function getMutationalSpectrumData(
     study = "PCAWG",
     samples = null,
@@ -434,14 +501,6 @@ const mSigSDK = (function () {
       let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
 
       let unformattedData = await (await fetchURLAndCache(cacheName, url)).json();
-      let formattedData = groupBy(unformattedData, "cancer")
-      Object.keys(formattedData).forEach(function(key, index) {
-        formattedData[key] = groupBy(formattedData[key], "sample");
-        Object.keys(formattedData[key]).forEach(function(patient, index) {
-          formattedData[key][patient] = Object.values(extractMutationalSpectra(formattedData[key][patient], "sample"))[0];
-
-        });
-      });
 
       return unformattedData;
     }
@@ -477,6 +536,20 @@ const mSigSDK = (function () {
     return data;
   }
 
+
+/**
+
+Fetches the mutational spectrum summary from the mutational signatures API based on the given parameters.
+@async
+@function
+@param {string} [study="PCAWG"] - The name of the cancer genome study. Default is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genomic data used. Default is "WGS".
+@param {string} [cancerType="Lung-AdenoCA"] - The type of cancer. Default is "Lung-AdenoCA".
+@param {number} [numberOfResults=10] - The number of results to be returned. Default is 10.
+@returns {Promise} - A Promise that resolves to a JSON object representing the mutational spectrum summary.
+@throws {Error} - If the API request fails.
+*/
+
   async function getMutationalSpectrumSummary(
     study = "PCAWG",
     genomeDataType = "WGS",
@@ -491,6 +564,19 @@ const mSigSDK = (function () {
   //#endregion
 
   //#region Mutational Signature Association
+
+ /**
+
+Fetches the mutational signature association options from the API endpoint
+@async
+@function
+@param {string} [study="PCAWG"] - The name of the study. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data. Defaults to "WGS".
+@param {number} [numberOfResults=10] - The number of results to return. Defaults to 10.
+@returns {Promise<Array>} - A Promise that resolves to an array of mutational signature association options.
+@throws {Error} - If an error occurs during the fetching or caching of the data.
+*/
+
   async function getMutationalSignatureAssociationOptions(
     study = "PCAWG",
     genomeDataType = "WGS",
@@ -500,6 +586,20 @@ const mSigSDK = (function () {
     const cacheName = "getMutationalSignatureAssociationOptions";
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
+
+  /**
+
+Retrieves mutational signature association data from a specified cancer study using the provided parameters.
+@async
+@function
+@param {string} [study="PCAWG"] - The name of the cancer study. Default is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data used. Default is "WGS".
+@param {string} [cancerType="Biliary-AdenoCA"] - The type of cancer. Default is "Biliary-AdenoCA".
+@param {number} [numberOfResults=10] - The maximum number of results to return. Default is 10.
+@returns {Promise<object>} - A Promise that resolves to the JSON response containing the mutational signature association data.
+*/
+
+
 
   async function getMutationalSignatureAssociationData(
     study = "PCAWG",
@@ -516,6 +616,16 @@ const mSigSDK = (function () {
 
   //#region Mutational Signature Activity
 
+  /**
+
+Retrieves a list of mutational signature activity options from the mutational signatures API.
+@async
+@function getMutationalSignatureActivityOptions
+@param {string} [study="PCAWG"] - The name of the study to retrieve mutational signature activity options for. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The genome data type to retrieve mutational signature activity options for. Defaults to "WGS".
+@param {number} [numberOfResults=10] - The number of results to retrieve. Defaults to 10.
+@returns {Promise<Array>} - A promise that resolves with an array of mutational signature activity options.
+*/
   async function getMutationalSignatureActivityOptions(
     study = "PCAWG",
     genomeDataType = "WGS",
@@ -550,6 +660,18 @@ Retrieves mutational signature landscape data from the mutational-signatures API
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
 
+  /**
+
+Retrieves mutational signature landscape data from an API endpoint.
+@async
+@function getMutationalSignatureLandscapeData
+@param {string} [study="PCAWG"] - The study to retrieve data from.
+@param {string} [genomeDataType="WGS"] - The type of genomic data used in the study.
+@param {string} [cancerType=""] - The type of cancer to retrieve data for.
+@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the mutational signature set to retrieve.
+@param {number} [numberOfResults=10] - The number of results to retrieve.
+@returns {Promise<object>} - A promise that resolves to an object containing the mutational signature landscape data.
+*/
   async function getMutationalSignatureLandscapeData(
     study = "PCAWG",
     genomeDataType = "WGS",
@@ -566,6 +688,25 @@ Retrieves mutational signature landscape data from the mutational-signatures API
 
   //#region Mutational Signature Etiology
 
+  /**
+
+Retrieves the etiology options for a given mutational signature from the Cancer.gov Mutational Signatures API.
+@async
+@function
+@param {string} [study="PCAWG"] - The name of the study to retrieve etiology options for. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data to retrieve etiology options for. Defaults to "WGS".
+@param {string} [signatureName="SBS3"] - The name of the mutational signature to retrieve etiology options for. Defaults to "SBS3".
+@param {string} [cancerType=""] - The cancer type to retrieve etiology options for. Defaults to an empty string.
+@param {number} [numberOfResults=10] - The maximum number of results to return. Defaults to 10.
+@returns {Promise<Object>} A promise that resolves to an object representing the etiology options for the specified mutational signature.
+The object will have the following properties:
+etiology: An array of strings representing the possible etiologies for the mutational signature.
+etiology_display: An array of strings representing the display names for the possible etiologies.
+signatureName: The name of the mutational signature.
+study: The name of the study.
+genome_data_type: The type of genome data.
+cancer_type: The cancer type.
+*/
   async function getMutationalSignatureEtiologyOptions(
     study = "PCAWG",
     genomeDataType = "WGS",
@@ -578,6 +719,18 @@ Retrieves mutational signature landscape data from the mutational-signatures API
     return await (await fetchURLAndCache(cacheName, url)).json();
   }
 
+  /**
+
+Retrieves mutational signature etiology data from the Cancer Genomics Research Laboratory (CGR) website.
+@async
+@function getMutationalSignatureEtiologyData
+@param {string} [study="PCAWG"] - The study name. Default is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The genome data type. Default is "WGS".
+@param {string} [signatureName="SBS3"] - The signature name. Default is "SBS3".
+@param {string} [cancerType=""] - The cancer type. Default is an empty string.
+@param {number} [numberOfResults=10] - The number of results to return. Default is 10.
+@returns {Promise} A promise that resolves to the mutational signature etiology data in JSON format.
+*/
   async function getMutationalSignatureEtiologyData(
     study = "PCAWG",
     genomeDataType = "WGS",
@@ -715,6 +868,7 @@ Retrieves mutational signature landscape data from the mutational-signatures API
         return Promise.reject(err);
       });
   }
+
   async function retrieveICGCDatasets(
     projects = ["BRCA-US"],
     datatype = "ssm",
@@ -824,7 +978,18 @@ Retrieves mutational signature landscape data from the mutational-signatures API
     }
     return dictionary;
   }
+/**
 
+@function obtainICGCDataMAF
+@async
+@description A function that retrieves ICGC (International Cancer Genome Consortium) mutation data in MAF (Mutation Annotation Format) format from local cache or external source.
+@param {string[]} [projects=["BRCA-US"]] An array of project codes to retrieve data from. Defaults to ["BRCA-US"].
+@param {string} [datatype="ssm"] The type of mutation data to retrieve. Defaults to "ssm".
+@param {string} [analysis_type="WGS"] The type of analysis to retrieve data from. Defaults to "WGS".
+@param {string} [output_format="TSV"] The format of the output file. Defaults to "TSV".
+@returns {Promise<Array<Object>>} A promise that resolves to an array of objects containing mutation data.
+@throws {Error} If any error occurs during the process of retrieving or caching the data.
+*/
   const obtainICGCDataMAF = async (
     projects = ["BRCA-US"],
     datatype = "ssm",
@@ -997,6 +1162,17 @@ initialized to zeros.
     }
   }
 
+/**
+
+Converts patient mutation data into mutational spectra.
+@async
+@function convertMatrix
+@param {Array} data - The patient mutation data to be converted.
+@param {number} [batch_size=100] - The number of mutations to process in each batch.
+@returns {Object} - The mutational spectra of each patient in an object.
+@throws {Error} - If there is an error in processing the mutation data.
+*/
+
   async function convertMatrix(data, batch_size = 100) {
     const mutationalSpectra = {};
 
@@ -1073,6 +1249,20 @@ initialized to zeros.
   function isNumeric(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
+/**
+
+Convert whole-genome sequencing (WGS) MAFs to panel MAFs by downsampling the WGS data based on a panel file.
+
+@async
+
+@function
+
+@param {Array<Array>} WgMAFs - Array of arrays containing WGS MAF data
+
+@param {Array<Array>|string} panelDf - Panel file represented as an array of arrays or a file path to read the panel file
+
+@returns {Promise<Array<Array>>} - Promise that resolves to an array of arrays containing panel MAF data
+*/
 
   function downsampleWGSArray(WGSArray, panelArray) {
     const includedRows = [];
@@ -1134,6 +1324,7 @@ initialized to zeros.
     });
   }
 
+
   async function convertWGStoPanel(WgMAFs, panelDf) {
     // Check if the panel file is an array of arrays or a file path. If it is a file path, read the file and convert it to an array of arrays
     let bed_file;
@@ -1153,6 +1344,20 @@ initialized to zeros.
   //#endregion
 
   //#region Plot the summary of a dataset
+
+/**
+
+Generates a mutational spectrum summary plot and displays it in a given HTML div element.
+@async
+@function
+@param {string} [studyName="PCAWG"] - The name of the cancer genomics study to use. Default is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genomic data to use. Default is "WGS".
+@param {string} [cancerTypeOrGroup="Lung-AdenoCA"] - The cancer type or group to display. Default is "Lung-AdenoCA".
+@param {number} [numberOfResults=50] - The maximum number of results to display. Default is 50.
+@param {string} [divID="mutationalSpectrumSummary"] - The ID of the HTML div element where the plot will be displayed. Default is "mutationalSpectrumSummary".
+@returns {Promise<void>} A Promise that resolves when the plot is displayed or rejects if there is an error.
+@throws {Error} If there is an error retrieving or displaying the plot, this function will throw an Error with a message describing the error.
+*/
 
   // This function plots the mutational spectrum summary for the given parameters.
   // Input:
@@ -1231,8 +1436,29 @@ initialized to zeros.
   
   // This function plots the mutational spectrum mutational count as boxplots for each cancer type for the given dataset.
 
+
+  /**
+
+Plots the mutational burden by cancer type for a given project.
+@async
+@function plotProjectMutationalBurdenByCancerType
+@param {Object} project - An object containing mutational data for different cancer types.
+@param {string} divID - The ID of the div where the plot should be displayed.
+@returns {Promise} - A Promise that resolves when the plot is displayed.
+@example
+// Example usage:
+plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
+*/
   async function plotProjectMutationalBurdenByCancerType(project, divID){
 
+    project = groupBy(project, "cancer")
+    Object.keys(project).forEach(function(key, index) {
+      project[key] = groupBy(project[key], "sample");
+      Object.keys(project[key]).forEach(function(patient, index) {
+        project[key][patient] = Object.values(extractMutationalSpectra(project[key][patient], "sample"))[0];
+
+      });
+    });
 
     // Loop through all the cancertypes in project and create a trace for each cancer type and add it to the data array
 
@@ -1287,6 +1513,17 @@ initialized to zeros.
   //#endregion
 
   //#region Plot a patient's mutational spectra
+/**
+
+Renders a plot of the mutational spectra for one or more patients in a given div element ID using Plotly.
+@async
+@function plotPatientMutationalSpectrum
+@param {Object} mutationalSpectra - An object containing the mutational spectra data for one or more patients.
+@param {number} [matrixSize=96] - The size of the plot matrix. Defaults to 96.
+@param {string} [divID='mutationalSpectrumMatrix'] - The ID of the div element to render the plot in. Defaults to 'mutationalSpectrumMatrix'.
+@returns {Promise<void>} A promise that resolves when the plot has been rendered.
+@throws {Error} An error is thrown if no data is available for the selected parameters.
+*/
 
   // This function plots the mutational spectrum for the given parameters.
   async function plotPatientMutationalSpectrum(
@@ -1425,6 +1662,19 @@ initialized to zeros.
     return groupedData;
   }
 
+  /**
+
+This function creates a heatmap using the cosine similarity matrix for the given grouped data.
+@async
+@function
+@param {Object} groupedData - An object containing grouped data where each key is a sample name and its value is an object containing sample data.
+@param {string} [studyName="PCAWG"] - The name of the study. Default value is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genomic data used. Default value is "WGS".
+@param {string} [cancerType="Lung-AdenoCA"] - The type of cancer. Default value is "Lung-AdenoCA".
+@param {string} [divID="cosineSimilarityHeatMap"] - The ID of the div where the heatmap should be displayed. Default value is "cosineSimilarityHeatMap".
+@returns {Array<Array<number>>} - The cosine similarity matrix.
+*/
+
   async function plotCosineSimilarityHeatMap(
     groupedData,
     studyName = "PCAWG",
@@ -1468,6 +1718,20 @@ initialized to zeros.
     Plotly.default.newPlot(divID, plotlyData, layout);
     return cosSimilarityMatrix;
   }
+
+  /**
+
+Plots a force directed tree of the patients in the study based on their mutational spectra.
+@async
+@function plotForceDirectedTree
+@param {Object} groupedData - An object containing patient data grouped by mutational spectra.
+@param {string} [studyName="PCAWG"] - The name of the study. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data. Defaults to "WGS".
+@param {string} [cancerType="Lung-AdenoCA"] - The type of cancer. Defaults to "Lung-AdenoCA".
+@param {string} [divID="forceDirectedTree"] - The ID of the HTML element where the force directed tree will be displayed. Defaults to "forceDirectedTree".
+@param {number} [maxDepth=0] - The maximum depth of the tree. If set to 0, the entire tree will be displayed. Defaults to 0.
+@returns {Object} - An object containing the formatted clusters for the force directed tree.
+*/
 
   // This function plots a force directed tree of the patients in the study based on their mutational spectra
   async function plotForceDirectedTree(
@@ -1566,12 +1830,25 @@ initialized to zeros.
 
   //#region Visualizes a set of mutational spectra using UMAP. 
   
-  // If 3 components are used, uses delaunay triangulation. https://plotly.com/python/3d-mesh/
-  // If 2 components are used, uses scatter plot. https://plotly.com/python/line-and-scatter/
-  // The alphahull parameter sets the shape of the mesh. If the value is -1 (default value) then Delaunay triangulation is used. If >0 then the alpha-shape algorithm is used. If 0, the convex hull is represented (resulting in a convex body).
-  
+  /**
+
+Plots a UMAP visualization of the input data.
+@async
+@function
+@param {object} data - The input data to visualize.
+@param {string} [datasetName="PCAWG"] - The name of the dataset being visualized.
+@param {string} divID - The ID of the HTML div element to plot the visualization in.
+@param {number} [nComponents=3] - The number of dimensions to project the data into.
+@param {number} [minDist=0.1] - The minimum distance between points in the UMAP algorithm.
+@param {number} [nNeighbors=15] - The number of neighbors to consider in the UMAP algorithm.
+@returns {object[]} An array of plot trace objects, containing the x, y, and z coordinates of the plot, as well as any additional plot options.
+@see {@link https://plotly.com/python/3d-mesh/} For more information on the alpha-shape algorithm used in 3D plotting.
+@see {@link https://plotly.com/python/line-and-scatter/} For more information on scatter plots.
+@see {@link https://umap-learn.readthedocs.io/en/latest/} For more information on the UMAP algorithm.
+*/
   async function plotUMAPVisualization(
     data,
+    datasetName = "PCAWG",
     divID,
     nComponents = 3,
     minDist = 0.1,
@@ -1611,7 +1888,7 @@ initialized to zeros.
     }
 
     let layout = {
-      title: `${nComponents} Component UMAP Projection of Mutational Signature Data`,
+      title: `${nComponents} Component UMAP Projection of ${datasetName} Dataset`,
       xaxis: { title: axisLabels[0] },
       yaxis: { title: axisLabels[1] },
     };
@@ -1693,7 +1970,7 @@ initialized to zeros.
   }
 
   
-async function plotDatasetMutationalSignaturesExposure(exposureData, divID, relative = true) {
+async function plotDatasetMutationalSignaturesExposure(exposureData,  divID, relative = true, datasetName ="PCAWG") {
     
     let dataset = deepCopy(exposureData);
     // Remove the rnorm values from each sample of the exposure data
@@ -1723,7 +2000,7 @@ async function plotDatasetMutationalSignaturesExposure(exposureData, divID, rela
     };
 
     let layout = {
-      title: "Mutational Signature Exposure for Dataset",
+      title: `Mutational Signature Exposure for ${datasetName} Dataset`,
       xaxis: {
         title: "Samples",
         nticks: Object.keys(dataset[Object.keys(dataset)[0]]).length,
