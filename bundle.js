@@ -218,6 +218,94 @@ function SBS96(apiData, title = '') {
 
 const mSigSDK = (function () {
   // #region Miscellaneous Functions
+  function euclideanDistance(a, b) {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) {
+      sum += Math.pow(a[i] - b[i], 2);
+    }
+    return Math.sqrt(sum);
+  }
+  
+  function upgma(matrix) {
+    const clusters = matrix.map((_, i) => [i]);
+    const distances = [];
+  
+    for (let i = 0; i < matrix.length; i++) {
+      distances.push([]);
+      for (let j = 0; j < i; j++) {
+        distances[i].push(euclideanDistance(matrix[i], matrix[j]));
+      }
+    }
+  
+    while (clusters.length > 1) {
+      const { minI, minJ } = findMinIndex(distances);
+      const newCluster = clusters[minI].concat(clusters[minJ]);
+  
+      const newDistances = [];
+      for (let i = 0; i < distances.length; i++) {
+        if (i !== minI && i !== minJ) {
+          const di = distances[Math.max(minI, i)][Math.min(minI, i)];
+          const dj = distances[Math.max(minJ, i)][Math.min(minJ, i)];
+          const dNew = (di * clusters[minI].length + dj * clusters[minJ].length) / newCluster.length;
+          newDistances.push(dNew);
+        }
+      }
+      distances[minI] = newDistances;
+      distances.splice(minJ, 1);
+  
+      clusters[minI] = newCluster;
+      clusters.splice(minJ, 1);
+    }
+  
+    return clusters[0];
+  }
+  
+  function findMinIndex(matrix) {
+    let min = Infinity;
+    let minI = -1;
+    let minJ = -1;
+  
+    for (let i = 1; i < matrix.length; i++) {
+      for (let j = 0; j < i; j++) {
+        if (matrix[i][j] < min) {
+          min = matrix[i][j];
+          minI = i;
+          minJ = j;
+        }
+      }
+    }
+  
+    return { minI, minJ };
+  }
+  
+  function doubleClustering(matrix, rowNames, colNames) {
+    const rowOrder = upgma(matrix);
+    const transposedMatrix = matrix[0].map((_, i) => matrix.map(row => row[i]));
+    const colOrder = upgma(transposedMatrix);
+  
+    const sortedMatrix = rowOrder.map(i => colOrder.map(j => matrix[i][j]));
+    const sortedRowNames = rowOrder.map(i => rowNames[i]);
+    const sortedColNames = colOrder.map(i => colNames[i]);
+  
+    return { 'matrix': sortedMatrix, 'rowNames':sortedRowNames, 'colNames':sortedColNames };
+  }
+  
+  function cosineSimilarity(a, b) {
+    let dotProduct = 0;
+    let magnitudeA = 0;
+    let magnitudeB = 0;
+
+    for (let i = 0; i < a.length; i++) {
+      dotProduct += a[i] * b[i];
+      magnitudeA += a[i] * a[i];
+      magnitudeB += b[i] * b[i];
+    }
+
+    magnitudeA = Math.sqrt(magnitudeA);
+    magnitudeB = Math.sqrt(magnitudeB);
+
+    return dotProduct / (magnitudeA * magnitudeB);
+  }
 
   function linspace(a, b, n) {
     return Array.from({ length: n }, (_, i) => a + (i * (b - a)) / (n - 1));
@@ -455,23 +543,6 @@ const mSigSDK = (function () {
       distanceMatrix.push(row);
     }
     return distanceMatrix;
-  }
-
-  // This function calculates the cosine similarity of two vectors
-  // The input is two vectors (each vector is a list of numbers)
-  // The output is the cosine similarity of the two vectors
-  function cosineSimilarity(vector1, vector2) {
-    let dotProduct = 0;
-    let magnitude1 = 0;
-    let magnitude2 = 0;
-    for (let i = 0; i < vector1.length; i++) {
-      dotProduct += vector1[i] * vector2[i];
-      magnitude1 += vector1[i] * vector1[i];
-      magnitude2 += vector2[i] * vector2[i];
-    }
-    magnitude1 = Math.sqrt(magnitude1);
-    magnitude2 = Math.sqrt(magnitude2);
-    return dotProduct / (magnitude1 * magnitude2);
   }
 
   // This function takes in the clusters and the distance matrix and calculates the distance between two clusters
@@ -1694,7 +1765,7 @@ plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
       const trace = {
         // x: Object.keys(project[cancerType]),
         y: Object.values(cancerTypeData).map((e) =>
-          Math.log(Object.values(e).reduce((a, b) => a + b, 0))
+          Math.log10(Object.values(e).reduce((a, b) => a + b, 0))
         ),
         type: "box",
         name: cancerType,
@@ -1718,7 +1789,7 @@ plotProjectMutationalBurdenByCancerType(projectData, "plotDiv");
         title: "Log (Number of Mutations)",
       },
       barmode: "stack",
-      height:600,
+      height: 600,
     };
 
     Plotly.default.newPlot(divID, data, layout);
@@ -1908,11 +1979,17 @@ This function creates a heatmap using the cosine similarity matrix for the given
       });
     });
 
+    let reorderedData = doubleClustering(
+      cosSimilarityMatrix,
+      Object.keys(groupedData),
+      Object.keys(groupedData)
+    );
+
     let plotlyData = [
       {
-        z: cosSimilarityMatrix,
-        x: Object.keys(groupedData),
-        y: Object.keys(groupedData),
+        z: reorderedData.matrix,
+        x: reorderedData.rowNames,
+        y: reorderedData.colNames,
         type: "heatmap",
       },
     ];
@@ -2248,10 +2325,15 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
       }
     }
 
+    let reorderedData = doubleClustering(
+      Object.values(dataset).map((data) => Object.values(data)),
+      Object.keys(dataset),
+      Object.keys(dataset[Object.keys(dataset)[0]]),
+    );
     let data = {
-      z: Object.values(dataset).map((data) => Object.values(data)),
-      x: Object.keys(dataset[Object.keys(dataset)[0]]),
-      y: Object.keys(dataset),
+      z: reorderedData.matrix,
+      x: reorderedData.colNames,
+      y: reorderedData.rowNames,
       type: "heatmap",
       colorscale: "Viridis",
     };
