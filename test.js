@@ -1,4 +1,5 @@
 mSigSDK = await (await import("../main.js")).mSigSDK;
+cancerType = "Lung-AdenoCA"
 visualizationData = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSpectrumData(
     "PCAWG",
     null,
