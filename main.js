@@ -24,6 +24,7 @@ import {
   createDistanceMatrix,
   hierarchicalClustering,
   doubleClustering,
+  cosineSimilarity,
 } from "./mSigSDKScripts/utils.js";
 
 // import * as mSigPortalPlotting from "./index.js";
@@ -775,7 +776,9 @@ This function creates a heatmap using the cosine similarity matrix for the given
     divID = "cosineSimilarityHeatMap"
   ) {
     let distanceMatrix = await createDistanceMatrix(
-      Object.values(groupedData).map((data) => Object.values(data))
+      Object.values(groupedData).map((data) => Object.values(data)),
+      cosineSimilarity,
+      true
     );
 
     let cosSimilarityMatrix = distanceMatrix.map(function (row) {
@@ -842,7 +845,9 @@ Plots a force directed tree of the patients in the study based on their mutation
     maxDepth = 0
   ) {
     let distanceMatrix = await createDistanceMatrix(
-      Object.values(groupedData).map((data) => Object.values(data))
+      Object.values(groupedData).map((data) => Object.values(data)),
+      cosineSimilarity,
+      true
     );
 
     let clusters = await hierarchicalClustering(
