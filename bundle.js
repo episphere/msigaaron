@@ -1,11 +1,11 @@
-import * as localforage from 'https://cdn.jsdelivr.net/npm/localforage/+esm';
-import * as pako from 'https://cdn.jsdelivr.net/npm/pako/+esm';
-import * as Papa from 'https://cdn.jsdelivr.net/npm/papaparse/+esm';
 import * as UMAP from 'https://cdn.jsdelivr.net/npm/umap-js/+esm';
 import * as Plotly from 'https://cdn.jsdelivr.net/npm/plotly.js-dist/+esm';
 import * as am5 from 'https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/+esm';
 import * as am5hierarchy from 'https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/hierarchy/+esm';
 import * as am5themes_Animated from 'https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.3.7/themes/Animated.js/+esm';
+import * as localforage from 'https://cdn.jsdelivr.net/npm/localforage/+esm';
+import * as pako from 'https://cdn.jsdelivr.net/npm/pako/+esm';
+import * as Papa from 'https://cdn.jsdelivr.net/npm/papaparse/+esm';
 
 function groupDataByMutation(
   apiData,
@@ -214,840 +214,9 @@ function SBS96(apiData, title = '') {
   return { traces, layout };
 }
 
-// import * as mSigPortalPlotting from "./index.js";
+//#region Retrieving SSM Files from ICGC Data Portal and Converting to MAF File
 
-const mSigSDK = (function () {
-  // #region Miscellaneous Functions
-  function euclideanDistance(a, b) {
-    let sum = 0;
-    for (let i = 0; i < a.length; i++) {
-      sum += Math.pow(a[i] - b[i], 2);
-    }
-    return Math.sqrt(sum);
-  }
   
-  function upgma(matrix) {
-    const clusters = matrix.map((_, i) => [i]);
-    const distances = [];
-  
-    for (let i = 0; i < matrix.length; i++) {
-      distances.push([]);
-      for (let j = 0; j < i; j++) {
-        distances[i].push(euclideanDistance(matrix[i], matrix[j]));
-      }
-    }
-  
-    while (clusters.length > 1) {
-      const { minI, minJ } = findMinIndex(distances);
-      const newCluster = clusters[minI].concat(clusters[minJ]);
-  
-      const newDistances = [];
-      for (let i = 0; i < distances.length; i++) {
-        if (i !== minI && i !== minJ) {
-          const di = distances[Math.max(minI, i)][Math.min(minI, i)];
-          const dj = distances[Math.max(minJ, i)][Math.min(minJ, i)];
-          const dNew = (di * clusters[minI].length + dj * clusters[minJ].length) / newCluster.length;
-          newDistances.push(dNew);
-        }
-      }
-      distances[minI] = newDistances;
-      distances.splice(minJ, 1);
-  
-      clusters[minI] = newCluster;
-      clusters.splice(minJ, 1);
-    }
-  
-    return clusters[0];
-  }
-  
-  function findMinIndex(matrix) {
-    let min = Infinity;
-    let minI = -1;
-    let minJ = -1;
-  
-    for (let i = 1; i < matrix.length; i++) {
-      for (let j = 0; j < i; j++) {
-        if (matrix[i][j] < min) {
-          min = matrix[i][j];
-          minI = i;
-          minJ = j;
-        }
-      }
-    }
-  
-    return { minI, minJ };
-  }
-  
-  function doubleClustering(matrix, rowNames, colNames) {
-    const rowOrder = upgma(matrix);
-    const transposedMatrix = matrix[0].map((_, i) => matrix.map(row => row[i]));
-    const colOrder = upgma(transposedMatrix);
-  
-    const sortedMatrix = rowOrder.map(i => colOrder.map(j => matrix[i][j]));
-    const sortedRowNames = rowOrder.map(i => rowNames[i]);
-    const sortedColNames = colOrder.map(i => colNames[i]);
-  
-    return { 'matrix': sortedMatrix, 'rowNames':sortedRowNames, 'colNames':sortedColNames };
-  }
-  
-  function cosineSimilarity(a, b) {
-    let dotProduct = 0;
-    let magnitudeA = 0;
-    let magnitudeB = 0;
-
-    for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      magnitudeA += a[i] * a[i];
-      magnitudeB += b[i] * b[i];
-    }
-
-    magnitudeA = Math.sqrt(magnitudeA);
-    magnitudeB = Math.sqrt(magnitudeB);
-
-    return dotProduct / (magnitudeA * magnitudeB);
-  }
-
-  function linspace(a, b, n) {
-    return Array.from({ length: n }, (_, i) => a + (i * (b - a)) / (n - 1));
-  }
-
-  // Deep copy an object
-  function deepCopy(obj) {
-    return JSON.parse(JSON.stringify(obj));
-  }
-
-  // Solve argmin_x || Ax - b ||_2 for x>=0. A is a matrix, b is a vector.
-  // Output is a vector x with the same length as b. The rnrom is the residual || Ax - b ||^2.
-  async function nnls(A, b, maxiter = 3 * A[0].length) {
-    const transpose = (matrix) =>
-      matrix[0].map((_, i) => matrix.map((row) => row[i]));
-    A = transpose(A);
-    const dot = (a, b) => {
-      if (a[0].length === undefined) {
-        // Vector-vector multiplication
-        return a.map((_, i) => a[i] * b[i]).reduce((sum, x) => sum + x);
-      } else {
-        // Matrix-vector multiplication
-        return a.map((row) => row.reduce((sum, x, i) => sum + x * b[i], 0));
-      }
-    };
-    const matrixMultiply = (A, B) => {
-      if (B[0].length === undefined) {
-        // Matrix-vector multiplication
-        return dot(A, B);
-      } else {
-        // Matrix-matrix multiplication
-        return A.map((row) =>
-          B[0].map((_, j) =>
-            dot(
-              row,
-              B.map((col) => col[j])
-            )
-          )
-        );
-      }
-    };
-    const vectorSubtraction = (a, b) => a.map((x, i) => x - b[i]);
-    const vectorAddition = (a, b) => a.map((x, i) => x + b[i]);
-    const vectorScale = (a, scalar) => a.map((x) => x * scalar);
-    const vectorNorm = (a) => Math.sqrt(dot(a, a));
-
-    const At = transpose(A);
-    const AtA = matrixMultiply(At, A);
-    const Atb = matrixMultiply(At, b);
-
-    let x = Array(A[0].length).fill(0);
-    let gradient;
-    let rnorm;
-
-    for (let iter = 0; iter < maxiter; iter++) {
-      gradient = vectorSubtraction(matrixMultiply(AtA, x), Atb);
-      let negativeGradient = gradient.map((x) => -x);
-
-      let alpha = 1;
-      let new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
-
-      while (new_x.some((val) => val < 0)) {
-        alpha /= 2;
-        new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
-      }
-
-      x = new_x;
-
-      if (vectorNorm(gradient) <= 1e-8) {
-        break;
-      }
-    }
-
-    rnorm = Math.sqrt(
-      dot(
-        vectorSubtraction(matrixMultiply(A, x), b),
-        vectorSubtraction(matrixMultiply(A, x), b)
-      )
-    );
-
-    return { x, rnorm };
-  }
-
-  async function fetchURLAndCache(cacheName, url, ICGC = null) {
-    const isCacheSupported = "caches" in window;
-    let matchedURL;
-
-    if (!isCacheSupported) {
-      return await fetch(url);
-    } else {
-      // Retrieve data from the cache
-
-      if (ICGC != null) {
-        matchedURL = ICGC;
-      } else {
-        matchedURL = url;
-      }
-
-      return await caches.open(cacheName).then((cache) => {
-        return cache.match(matchedURL).then(function (response) {
-          // Check if the data was found in the cache
-          if (response) {
-            // Use the cached data
-            console.log("Data found in cache:", response);
-            return response;
-          } else {
-            // Fetch the data from the server
-            console.log("Data not found in cache, fetching from server...");
-            return fetch(url)
-              .then(function (response) {
-                // Use the fetched data
-
-                const responseClone = response.clone();
-                caches.open(cacheName).then(function (cache) {
-                  // Add the response to the cache
-                  cache.put(matchedURL, responseClone);
-                });
-
-                console.log("Data fetched from server:", response);
-
-                return response;
-              })
-              .catch(function (error) {
-                throw new Error("Error fetching data:", error);
-              });
-          }
-        });
-      });
-    }
-  }
-
-  // limit the depth of the forceDirectedTree
-  function limitDepth(data, maxDepth) {
-    if (maxDepth === 0 || !Array.isArray(data.children)) {
-      // Base case: If max depth is reached or there are no more children, return data
-      return data;
-    }
-
-    // Recursively limit the depth of each child
-    data.children = data.children.map((child) =>
-      limitDepth(child, maxDepth - 1)
-    );
-
-    if (maxDepth === 1) {
-      // If we've reached the maximum depth, merge all children and return the result
-      const mergedChildren = data.children.reduce((acc, curr) => {
-        if (Array.isArray(curr.children)) {
-          return [...acc, ...curr.children];
-        } else {
-          return [...acc, curr];
-        }
-      }, []);
-      return { ...data, children: mergedChildren };
-    } else {
-      // Otherwise, return the data with its children intact
-      return data;
-    }
-  }
-
-  // Write a function that converts the json data from ./now.json to the format in ./structure.json
-
-  function formatHierarchicalClustersToAM5Format(
-    firstFileStructure,
-    studyName,
-    genomeType,
-    cancerType,
-    studySize,
-    originalData
-  ) {
-    const result = {
-      name: `${studyName} ${cancerType}\n${genomeType} Dataset (n=${studySize})`,
-      totalMutationCount: Object.values(originalData)
-        .map((array) => {
-          return Object.values(array);
-        })
-        .reduce((a, b) => {
-          return a.concat(b);
-        }) // flatten array
-        .reduce((a, b) => {
-          return a + b;
-        }),
-      children: [],
-    };
-    function traverse(node, parent) {
-      const children = {
-        name: 1 - node.distance,
-        // value: 1 - node.distance,
-        children: [],
-        totalMutationCount: 0,
-      };
-      if (node.left) traverse(node.left, children);
-      if (node.right) traverse(node.right, children);
-      if (node.name) children.name = node.name;
-      // if (node.name) children.value = 1;
-      if (node.name) children.mutations = originalData[node.name];
-      if (node.name)
-        children.totalMutationCount = Object.values(
-          originalData[node.name]
-        ).reduce((a, b) => a + b, 0);
-      if (!node.name)
-        children.totalMutationCount = children.children.reduce(
-          (a, b) => a + b.totalMutationCount,
-          0
-        );
-      if (!parent) result.children.push(children);
-      else parent.children.push(children);
-    }
-    traverse(firstFileStructure);
-    return result;
-  }
-
-  // Takes in an array of objects and a key and returns an object that groups the objects by the key
-
-  function groupBy(array, key) {
-    return array.reduce((result, currentValue) => {
-      (result[currentValue[key]] = result[currentValue[key]] || []).push(
-        currentValue
-      );
-      return result;
-    }, {});
-  }
-
-  // This function creates a distance matrix based on 1 - the cosine similarity of a list of mutational spectra vectors
-  // The input is a list of mutational spectra vectors (each vector is a list of mutation frequencies)
-  // The output is a distance matrix (a list of lists of distances)
-  function createDistanceMatrix(mutationalSpectra) {
-    let distanceMatrix = [];
-    for (let i = 0; i < mutationalSpectra.length; i++) {
-      let row = [];
-      for (let j = 0; j < mutationalSpectra.length; j++) {
-        let distance =
-          1 - cosineSimilarity(mutationalSpectra[i], mutationalSpectra[j]);
-        row.push(distance);
-      }
-      distanceMatrix.push(row);
-    }
-    return distanceMatrix;
-  }
-
-  // This function takes in the clusters and the distance matrix and calculates the distance between two clusters
-  function calculateDistance(cluster1, cluster2, distanceMatrix) {
-    let totalDistance = 0;
-    let totalSamples = 0;
-
-    // Loop through all pairs of samples in the two clusters
-    for (let i = 0; i < cluster1.length; i++) {
-      for (let j = 0; j < cluster2.length; j++) {
-        // Calculate the distance between the two samples and add it to the total distance between the clusters
-        let sample1 = cluster1[i];
-        let sample2 = cluster2[j];
-        totalDistance += distanceMatrix[sample1][sample2];
-        totalSamples++;
-      }
-    }
-    return totalDistance / totalSamples;
-  }
-
-  function hierarchicalClustering(distanceMatrix, sampleNames) {
-    // Create an array to store the clusters
-    let clusters = [];
-
-    // Initialize each sample as its own cluster
-    for (let i = 0; i < distanceMatrix.length; i++) {
-      clusters.push([i]);
-    }
-
-    // Loop until we have a single cluster left
-    while (clusters.length > 1) {
-      // Find the two closest clusters
-      let minDistance = Infinity;
-      let closestClusters = [];
-
-      for (let i = 0; i < clusters.length; i++) {
-        for (let j = i + 1; j < clusters.length; j++) {
-          // Calculate the distance between clusters i and j
-          let distance = calculateDistance(
-            clusters[i],
-            clusters[j],
-            distanceMatrix
-          );
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestClusters = [i, j];
-          }
-        }
-      }
-
-      // Merge the two closest clusters
-      let mergedCluster = clusters[closestClusters[0]].concat(
-        clusters[closestClusters[1]]
-      );
-      clusters.splice(closestClusters[1], 1);
-      clusters.splice(closestClusters[0], 1, mergedCluster);
-    }
-
-    // Return the final clustering result as a tree
-    return buildTree(clusters[0], distanceMatrix, sampleNames);
-  }
-
-  // This function calculates the average distance between two clusters. It takes in two clusters and a distance matrix as its parameters. The clusters are arrays of indices of the samples in the distance matrix. It finds the average distance between the two clusters and returns the average distance.
-
-  function calculateDistance(cluster1, cluster2, distanceMatrix) {
-    // Calculate the average distance between samples in the two clusters
-    let distanceSum = 0;
-    let numPairs = 0;
-
-    for (let i = 0; i < cluster1.length; i++) {
-      for (let j = 0; j < cluster2.length; j++) {
-        distanceSum += distanceMatrix[cluster1[i]][cluster2[j]];
-        numPairs++;
-      }
-    }
-
-    return distanceSum / numPairs;
-  }
-
-  function buildTree(cluster, distanceMatrix, sampleNames) {
-    // Recursively build the tree using nested objects
-    if (cluster.length == 1) {
-      // If the cluster contains only one sample, return it as a leaf node
-      return { name: sampleNames[cluster[0]] };
-    } else {
-      // Otherwise, recursively build the tree for each sub-cluster
-      let leftCluster = cluster.slice(0, Math.floor(cluster.length / 2));
-      let rightCluster = cluster.slice(Math.floor(cluster.length / 2));
-
-      return {
-        left: buildTree(leftCluster, distanceMatrix, sampleNames),
-        right: buildTree(rightCluster, distanceMatrix, sampleNames),
-        distance: calculateDistance(leftCluster, rightCluster, distanceMatrix),
-      };
-    }
-  }
-
-  // #endregion
-
-  /**
-   * @namespace mSigPortalData
-   */
-
-  /**
-   * @namespace mSigPortalPlots
-   */
-
-  /**
-   * @namespace ICGC
-   */
-
-  //#region Mutational Signatures
-
-  /**
-
-Retrieves the mutational signature options from the specified API endpoint.
-@async
-@function
-@memberof mSigPortalData
-@name getMutationalSignaturesOptions
-@param {string} [genomeDataType="WGS"] - The genome data type to use. Defaults to "WGS".
-@param {string} [mutationType="SBS"] - The mutation type to use. Defaults to "SBS".
-@returns {Promise} A Promise that resolves to the mutational signature options in JSON format.
-@example
-const mutationalSignatures = await getMutationalSignaturesOptions("WGS", "SBS");
-console.log(mutationalSignatures);
-*/
-  async function getMutationalSignaturesOptions(
-    genomeDataType = "WGS",
-    mutationType = "SBS"
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature_options?
-    source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&offset=0`;
-    const cacheName = "getMutationalSignaturesOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  /**
-
-Retrieves mutational signatures data from the specified endpoint and returns it as JSON.
-@async
-@function
-@memberof mSigPortalData
-@param {string} [genomeDataType="WGS"] - The type of genome data to use. Defaults to "WGS".
-@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the signature set to use. Defaults to "COSMIC_v3_Signatures_GRCh37_SBS96".
-@param {string} [mutationType="SBS"] - The type of mutation to analyze. Defaults to "SBS".
-@param {number} [numberofResults=10] - The number of results to retrieve. Defaults to 10.
-@returns {Promise<Object>} - A Promise that resolves to the unformatted mutational signatures data as JSON.
-*/
-
-  async function getMutationalSignaturesData(
-    genomeDataType = "WGS",
-    signatureSetName = "COSMIC_v3_Signatures_GRCh37_SBS96",
-    mutationType = "SBS",
-    numberofResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature?
-    source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&matrix=96&signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
-    const cacheName = "getMutationalSignaturesData";
-    const unformattedData = await (
-      await fetchURLAndCache(cacheName, url)
-    ).json();
-    extractMutationalSpectra(
-      unformattedData,
-      "signatureName"
-    );
-    return unformattedData;
-  }
-
-  /**
-
-Returns a summary of mutational signatures based on the provided signature set name and number of results.
-@async
-@function
-@memberof mSigPortalData
-@param {number} [numberofResults=10] - The number of results to retrieve. Defaults to 10 if not provided.
-@param {string} [signatureSetName="COSMIC_v3.3_Signatures"] - The name of the signature set to retrieve. Defaults to "COSMIC_v3.3_Signatures" if not provided.
-@returns {Promise<Object>} - A Promise that resolves to an object representing the mutational signature summary.
-@throws {Error} - Throws an error if there was an issue fetching the mutational signature summary.
-@example
-const summary = await getMutationalSignaturesSummary(20, "COSMIC_v3.3_Signatures");
-console.log(summary);
-*/
-
-  async function getMutationalSignaturesSummary(
-    numberofResults = 10,
-    signatureSetName = "COSMIC_v3.3_Signatures"
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature_summary?signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
-    const cacheName = "getMutationalSignaturesSummary";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-  //#endregion
-
-  //#region Mutational Spectrum
-
-  /**
-
-Retrieves mutational spectrum options from the mutational signatures API.
-@async
-@memberof mSigPortalData
-@function
-@param {string} [study="PCAWG"] - The name of the study to retrieve options for. Defaults to "PCAWG".
-@param {string} [genomeDataType="WGS"] - The genome data type to retrieve options for. Defaults to "WGS".
-@param {string} [cancerType="Lung-AdenoCA"] - The cancer type to retrieve options for. Defaults to "Lung-AdenoCA".
-@param {number} [numberOfResults=10] - The number of results to retrieve. Defaults to 10.
-@returns {Promise<Object>} A Promise that resolves to the JSON response from the mutational signatures API.
-*/
-
-  async function getMutationalSpectrumOptions(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    cancerType = "Lung-AdenoCA",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum_options?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&offset=0&limit=${numberOfResults}`;
-    const cacheName = "getMutationalSpectrumOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  /**
-
-* Fetches mutational spectrum data from the Cancer Genomics Data Server API and returns it in a formatted way.
-* @async
-* @function getMutationalSpectrumData
-* @memberof mSigPortalData
-* @param {string} [study="PCAWG"] - The study identifier.
-* @param {string[]|null} [samples=null] - The sample identifier(s) to query data for.
-* @param {string} [genomeDataType="WGS"] - The genome data type identifier.
-* @param {string} [cancerType="Lung-AdenoCA"] - The cancer type identifier.
-* @param {string} [mutationType="SBS"] - The mutation type identifier.
-* @param {number} [matrixSize=96] - The size of the mutational spectrum matrix.
-* @returns {Promise} - A promise that resolves to the formatted mutational spectrum data.
-*/
-  async function getMutationalSpectrumData(
-    study = "PCAWG",
-    samples = null,
-    genomeDataType = "WGS",
-    cancerType = "Lung-AdenoCA",
-    mutationType = "SBS",
-    matrixSize = 96
-  ) {
-    const cacheName = "getMutationalSpectrumData";
-
-    const promises = [];
-    let urls = [];
-
-    if (cancerType == null) {
-      let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
-
-      let unformattedData = await (
-        await fetchURLAndCache(cacheName, url)
-      ).json();
-
-      return unformattedData;
-    }
-
-    if (samples === null) {
-      let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
-
-      let unformattedData = await (
-        await fetchURLAndCache(cacheName, url)
-      ).json();
-      extractMutationalSpectra(unformattedData, "sample");
-      return unformattedData;
-    } else {
-      samples.forEach((sample) => {
-        urls.push(
-          `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&sample=${sample}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`
-        );
-      });
-    }
-
-    urls.forEach((url) => {
-      promises.push(fetchURLAndCache(cacheName, url));
-    });
-
-    const results = await Promise.all(promises);
-
-    const data = await Promise.all(
-      results.map((result) => {
-        return result.json();
-      })
-    );
-
-    extractMutationalSpectra(data.flat(), "sample");
-
-    return data;
-  }
-
-  /**
-
-Fetches the mutational spectrum summary from the mutational signatures API based on the given parameters.
-@async
-@function
-@memberof mSigPortalData
-@param {string} [study="PCAWG"] - The name of the cancer genome study. Default is "PCAWG".
-@param {string} [genomeDataType="WGS"] - The type of genomic data used. Default is "WGS".
-@param {string} [cancerType="Lung-AdenoCA"] - The type of cancer. Default is "Lung-AdenoCA".
-@param {number} [numberOfResults=10] - The number of results to be returned. Default is 10.
-@returns {Promise} - A Promise that resolves to a JSON object representing the mutational spectrum summary.
-@throws {Error} - If the API request fails.
-*/
-
-  async function getMutationalSpectrumSummary(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    cancerType = "Lung-AdenoCA",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum_summary?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
-    const cacheName = "getMutationalSpectrumSummary";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  //#endregion
-
-  //#region Mutational Signature Association
-
-  /**
-
-Fetches the mutational signature association options from the API endpoint
-@async
-@function
-@memberof mSigPortalData
-@param {string} [study="PCAWG"] - The name of the study. Defaults to "PCAWG".
-@param {string} [genomeDataType="WGS"] - The type of genome data. Defaults to "WGS".
-@param {number} [numberOfResults=10] - The number of results to return. Defaults to 10.
-@returns {Promise<Array>} - A Promise that resolves to an array of mutational signature association options.
-@throws {Error} - If an error occurs during the fetching or caching of the data.
-*/
-
-  async function getMutationalSignatureAssociationOptions(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_association_options?study=${study}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
-    const cacheName = "getMutationalSignatureAssociationOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  /**
-
-Retrieves mutational signature association data from a specified cancer study using the provided parameters.
-@async
-@function
-@memberof mSigPortalData
-@param {string} [study="PCAWG"] - The name of the cancer study. Default is "PCAWG".
-@param {string} [genomeDataType="WGS"] - The type of genome data used. Default is "WGS".
-@param {string} [cancerType="Biliary-AdenoCA"] - The type of cancer. Default is "Biliary-AdenoCA".
-@param {number} [numberOfResults=10] - The maximum number of results to return. Default is 10.
-@returns {Promise<object>} - A Promise that resolves to the JSON response containing the mutational signature association data.
-*/
-
-  async function getMutationalSignatureAssociationData(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    cancerType = "Biliary-AdenoCA",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_association?study=${study}&strategy=${genomeDataType}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
-    const cacheName = "getMutationalSignatureAssociationData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  //#endregion
-
-  //#region Mutational Signature Activity
-
-  /**
-
-Retrieves a list of mutational signature activity options from the mutational signatures API.
-@async
-@function getMutationalSignatureActivityOptions
-@memberof mSigPortalData
-@param {string} [study="PCAWG"] - The name of the study to retrieve mutational signature activity options for. Defaults to "PCAWG".
-@param {string} [genomeDataType="WGS"] - The genome data type to retrieve mutational signature activity options for. Defaults to "WGS".
-@param {number} [numberOfResults=10] - The number of results to retrieve. Defaults to 10.
-@returns {Promise<Array>} - A promise that resolves with an array of mutational signature activity options.
-*/
-  async function getMutationalSignatureActivityOptions(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity_options?study=${study}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
-    const cacheName = "getMutationalSignatureActivityOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-  /**
-
-Retrieves mutational signature landscape data from the mutational-signatures API.
-@async
-@function
-@memberof mSigPortalData
-@param {string} [study="PCAWG"] - The name of the study. Default value is "PCAWG".
-@param {string} [genomeDataType="WGS"] - The type of genome data. Default value is "WGS".
-@param {string} [cancerType=""] - The name of the cancer type. Default value is an empty string.
-@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the signature set. Default value is "COSMIC_v3_Signatures_GRCh37_SBS96".
-@param {number} [numberOfResults=10] - The maximum number of results to be returned. Default value is 10.
-@returns {Promise<Object>} - A Promise that resolves to the JSON data of the mutational signature landscape.
-*/
-
-  async function getMutationalSignatureActivityData(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    signatureSetName = "COSMIC_v3_Signatures_GRCh37_SBS96",
-    cancerType = "",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity?study=${study}&strategy=${genomeDataType}&signatureSetName=${signatureSetName}&limit=${numberOfResults}&cancer=${cancerType}&offset=0`;
-    const cacheName = "getMutationalSignatureActivityData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  /**
-
-Retrieves mutational signature landscape data from an API endpoint.
-@async
-@function getMutationalSignatureLandscapeData
-@param {string} [study="PCAWG"] - The study to retrieve data from.
-@param {string} [genomeDataType="WGS"] - The type of genomic data used in the study.
-@param {string} [cancerType=""] - The type of cancer to retrieve data for.
-@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the mutational signature set to retrieve.
-@param {number} [numberOfResults=10] - The number of results to retrieve.
-@returns {Promise<object>} - A promise that resolves to an object containing the mutational signature landscape data.
-*/
-  async function getMutationalSignatureLandscapeData(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    cancerType = "",
-    signatureSetName = "COSMIC_v3_Signatures_GRCh37_SBS96",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity?study=${study}&strategy=${genomeDataType}&signatureSetName=${signatureSetName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
-    const cacheName = "getMutationalSignatureLandscapeData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  //#endregion
-
-  //#region Mutational Signature Etiology
-
-  /**
-
-Retrieves the etiology options for a given mutational signature from the Cancer.gov Mutational Signatures API.
-@async
-@function
-@memberof mSigPortalData
-@param {string} [study="PCAWG"] - The name of the study to retrieve etiology options for. Defaults to "PCAWG".
-@param {string} [genomeDataType="WGS"] - The type of genome data to retrieve etiology options for. Defaults to "WGS".
-@param {string} [signatureName="SBS3"] - The name of the mutational signature to retrieve etiology options for. Defaults to "SBS3".
-@param {string} [cancerType=""] - The cancer type to retrieve etiology options for. Defaults to an empty string.
-@param {number} [numberOfResults=10] - The maximum number of results to return. Defaults to 10.
-@returns {Promise<Object>} A promise that resolves to an object representing the etiology options for the specified mutational signature.
-The object will have the following properties:
-etiology: An array of strings representing the possible etiologies for the mutational signature.
-etiology_display: An array of strings representing the display names for the possible etiologies.
-signatureName: The name of the mutational signature.
-study: The name of the study.
-genome_data_type: The type of genome data.
-cancer_type: The cancer type.
-*/
-  async function getMutationalSignatureEtiologyOptions(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    signatureName = "SBS3",
-    cancerType = "",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_etiology_options?study=${study}&strategy=${genomeDataType}&signatureName=${signatureName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
-    const cacheName = "getMutationalSignatureEtiologyOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  /**
-
-Retrieves mutational signature etiology data from the Cancer Genomics Research Laboratory (CGR) website.
-@async
-@function getMutationalSignatureEtiologyData
-@memberof mSigPortalData
-@param {string} [study="PCAWG"] - The study name. Default is "PCAWG".
-@param {string} [genomeDataType="WGS"] - The genome data type. Default is "WGS".
-@param {string} [signatureName="SBS3"] - The signature name. Default is "SBS3".
-@param {string} [cancerType=""] - The cancer type. Default is an empty string.
-@param {number} [numberOfResults=10] - The number of results to return. Default is 10.
-@returns {Promise} A promise that resolves to the mutational signature etiology data in JSON format.
-*/
-  async function getMutationalSignatureEtiologyData(
-    study = "PCAWG",
-    genomeDataType = "WGS",
-    signatureName = "SBS3",
-    cancerType = "",
-    numberOfResults = 10
-  ) {
-    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_etiology?study=${study}&strategy=${genomeDataType}&signatureName=${signatureName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
-    const cacheName = "getMutationalSignatureEtiologyData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
-  }
-
-  //#endregion
-
-  //#region Retrieving SSM Files from ICGC Data Portal and Converting to MAF File
-
   async function getDownloadId(
     pqlQuery,
     dataType = "ssm",
@@ -1626,6 +795,827 @@ Converts whole-genome variant frequencies (WgMAFs) to panel variant frequencies.
     }
     return panelMAFs;
   }
+
+function cosineSimilarity(a, b) {
+  let dotProduct = 0;
+  let magnitudeA = 0;
+  let magnitudeB = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    magnitudeA += a[i] * a[i];
+    magnitudeB += b[i] * b[i];
+  }
+
+  magnitudeA = Math.sqrt(magnitudeA);
+  magnitudeB = Math.sqrt(magnitudeB);
+
+  return dotProduct / (magnitudeA * magnitudeB);
+}
+
+function linspace(a, b, n) {
+  return Array.from({ length: n }, (_, i) => a + (i * (b - a)) / (n - 1));
+}
+
+// Deep copy an object
+function deepCopy(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+// Solve argmin_x || Ax - b ||_2 for x>=0. A is a matrix, b is a vector.
+// Output is a vector x with the same length as b. The rnrom is the residual || Ax - b ||^2.
+async function nnls(A, b, maxiter = 3 * A[0].length) {
+  const transpose = (matrix) =>
+    matrix[0].map((_, i) => matrix.map((row) => row[i]));
+  A = transpose(A);
+  const dot = (a, b) => {
+    if (a[0].length === undefined) {
+      // Vector-vector multiplication
+      return a.map((_, i) => a[i] * b[i]).reduce((sum, x) => sum + x);
+    } else {
+      // Matrix-vector multiplication
+      return a.map((row) => row.reduce((sum, x, i) => sum + x * b[i], 0));
+    }
+  };
+  const matrixMultiply = (A, B) => {
+    if (B[0].length === undefined) {
+      // Matrix-vector multiplication
+      return dot(A, B);
+    } else {
+      // Matrix-matrix multiplication
+      return A.map((row) =>
+        B[0].map((_, j) =>
+          dot(
+            row,
+            B.map((col) => col[j])
+          )
+        )
+      );
+    }
+  };
+  const vectorSubtraction = (a, b) => a.map((x, i) => x - b[i]);
+  const vectorAddition = (a, b) => a.map((x, i) => x + b[i]);
+  const vectorScale = (a, scalar) => a.map((x) => x * scalar);
+  const vectorNorm = (a) => Math.sqrt(dot(a, a));
+
+  const At = transpose(A);
+  const AtA = matrixMultiply(At, A);
+  const Atb = matrixMultiply(At, b);
+
+  let x = Array(A[0].length).fill(0);
+  let gradient;
+  let rnorm;
+
+  for (let iter = 0; iter < maxiter; iter++) {
+    gradient = vectorSubtraction(matrixMultiply(AtA, x), Atb);
+    let negativeGradient = gradient.map((x) => -x);
+
+    let alpha = 1;
+    let new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
+
+    while (new_x.some((val) => val < 0)) {
+      alpha /= 2;
+      new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
+    }
+
+    x = new_x;
+
+    if (vectorNorm(gradient) <= 1e-8) {
+      break;
+    }
+  }
+
+  rnorm = Math.sqrt(
+    dot(
+      vectorSubtraction(matrixMultiply(A, x), b),
+      vectorSubtraction(matrixMultiply(A, x), b)
+    )
+  );
+
+  return { x, rnorm };
+}
+
+async function fetchURLAndCache$1(cacheName, url, ICGC = null) {
+  const isCacheSupported = "caches" in window;
+  let matchedURL;
+
+  if (!isCacheSupported) {
+    return await fetch(url);
+  } else {
+    // Retrieve data from the cache
+
+    if (ICGC != null) {
+      matchedURL = ICGC;
+    } else {
+      matchedURL = url;
+    }
+
+    return await caches.open(cacheName).then((cache) => {
+      return cache.match(matchedURL).then(function (response) {
+        // Check if the data was found in the cache
+        if (response) {
+          // Use the cached data
+          console.log("Data found in cache:", response);
+          return response;
+        } else {
+          // Fetch the data from the server
+          console.log("Data not found in cache, fetching from server...");
+          return fetch(url)
+            .then(function (response) {
+              // Use the fetched data
+
+              const responseClone = response.clone();
+              caches.open(cacheName).then(function (cache) {
+                // Add the response to the cache
+                cache.put(matchedURL, responseClone);
+              });
+
+              console.log("Data fetched from server:", response);
+
+              return response;
+            })
+            .catch(function (error) {
+              throw new Error("Error fetching data:", error);
+            });
+        }
+      });
+    });
+  }
+}
+
+// limit the depth of the forceDirectedTree
+function limitDepth(data, maxDepth) {
+  if (maxDepth === 0 || !Array.isArray(data.children)) {
+    // Base case: If max depth is reached or there are no more children, return data
+    return data;
+  }
+
+  // Recursively limit the depth of each child
+  data.children = data.children.map((child) => limitDepth(child, maxDepth - 1));
+
+  if (maxDepth === 1) {
+    // If we've reached the maximum depth, merge all children and return the result
+    const mergedChildren = data.children.reduce((acc, curr) => {
+      if (Array.isArray(curr.children)) {
+        return [...acc, ...curr.children];
+      } else {
+        return [...acc, curr];
+      }
+    }, []);
+    return { ...data, children: mergedChildren };
+  } else {
+    // Otherwise, return the data with its children intact
+    return data;
+  }
+}
+
+// Write a function that converts the json data from ./now.json to the format in ./structure.json
+
+function formatHierarchicalClustersToAM5Format(
+  firstFileStructure,
+  studyName,
+  genomeType,
+  cancerType,
+  studySize,
+  originalData
+) {
+  const result = {
+    name: `${studyName} ${cancerType}\n${genomeType} Dataset (n=${studySize})`,
+    totalMutationCount: Object.values(originalData)
+      .map((array) => {
+        return Object.values(array);
+      })
+      .reduce((a, b) => {
+        return a.concat(b);
+      }) // flatten array
+      .reduce((a, b) => {
+        return a + b;
+      }),
+    children: [],
+  };
+  function traverse(node, parent) {
+    const children = {
+      name: 1 - node.distance,
+      // value: 1 - node.distance,
+      children: [],
+      totalMutationCount: 0,
+    };
+    if (node.left) traverse(node.left, children);
+    if (node.right) traverse(node.right, children);
+    if (node.name) children.name = node.name;
+    // if (node.name) children.value = 1;
+    if (node.name) children.mutations = originalData[node.name];
+    if (node.name)
+      children.totalMutationCount = Object.values(
+        originalData[node.name]
+      ).reduce((a, b) => a + b, 0);
+    if (!node.name)
+      children.totalMutationCount = children.children.reduce(
+        (a, b) => a + b.totalMutationCount,
+        0
+      );
+    if (!parent) result.children.push(children);
+    else parent.children.push(children);
+  }
+  traverse(firstFileStructure);
+  return result;
+}
+
+// Takes in an array of objects and a key and returns an object that groups the objects by the key
+
+function groupBy(array, key) {
+  return array.reduce((result, currentValue) => {
+    (result[currentValue[key]] = result[currentValue[key]] || []).push(
+      currentValue
+    );
+    return result;
+  }, {});
+}
+
+// This function creates a distance matrix based on 1 - the cosine similarity of a list of mutational spectra vectors
+// The input is a list of mutational spectra vectors (each vector is a list of mutation frequencies)
+// The output is a distance matrix (a list of lists of distances)
+function createDistanceMatrix(matrix, metric, similarity) {
+  let distanceMatrix = [];
+  for (let i = 0; i < matrix.length; i++) {
+    let row = [];
+    for (let j = 0; j < matrix.length; j++) {
+      let distance;
+      if (similarity) {
+        distance = 1 - metric(matrix[i], matrix[j]);
+      } else {
+        distance = metric(matrix[i], matrix[j]);
+      }
+
+      row.push(distance);
+    }
+    distanceMatrix.push(row);
+  }
+  return distanceMatrix;
+}
+
+function hierarchicalClustering(distanceMatrix, sampleNames) {
+
+  let order = flatten(upgma(distanceMatrix).slice(-1)).slice(0, upgma(distanceMatrix).length+1);
+  
+  // Return the final clustering result as a tree
+  return buildTree(order, distanceMatrix, sampleNames);
+}
+
+// This function calculates the average distance between two clusters. It takes in two clusters and a distance matrix as its parameters. The clusters are arrays of indices of the samples in the distance matrix. It finds the average distance between the two clusters and returns the average distance.
+
+function calculateDistance(cluster1, cluster2, distanceMatrix) {
+  // Calculate the average distance between samples in the two clusters
+  let distanceSum = 0;
+  let numPairs = 0;
+
+  for (let i = 0; i < cluster1.length; i++) {
+    for (let j = 0; j < cluster2.length; j++) {
+      distanceSum += distanceMatrix[cluster1[i]][cluster2[j]];
+      numPairs++;
+    }
+  }
+
+  return distanceSum / numPairs;
+}
+
+function buildTree(cluster, distanceMatrix, sampleNames) {
+  // Recursively build the tree using nested objects
+  if (cluster.length == 1) {
+    // If the cluster contains only one sample, return it as a leaf node
+    return { name: sampleNames[cluster[0]] };
+  } else {
+    // Otherwise, recursively build the tree for each sub-cluster
+    let leftCluster = cluster.slice(0, Math.floor(cluster.length / 2));
+    let rightCluster = cluster.slice(Math.floor(cluster.length / 2));
+
+    return {
+      left: buildTree(leftCluster, distanceMatrix, sampleNames),
+      right: buildTree(rightCluster, distanceMatrix, sampleNames),
+      distance: calculateDistance(leftCluster, rightCluster, distanceMatrix),
+    };
+  }
+}
+
+function flatten(array) {
+  return array.reduce(function(memo, el) {
+    var items = Array.isArray(el) ? flatten(el) : [el];
+    return memo.concat(items);
+  }, []);
+}
+
+function copyNestedArray(arr) {
+  let copy = arr.slice();
+  for (let i = 0; i < copy.length; i++) {
+    if (Array.isArray(copy[i])) {
+      copy[i] = copyNestedArray(copy[i]);
+    }
+  }
+  return copy;
+}
+
+function upgma(distanceMatrix) {
+  distanceMatrix = copyNestedArray(distanceMatrix);
+
+  const clusters = distanceMatrix.map((_, index) => [index]);
+  const result = [];
+
+  while (clusters.length > 1) {
+    const [minI, minJ] = findMinIndices(distanceMatrix);
+    const minDist = distanceMatrix[minI][minJ];
+
+    result.push([clusters[minI], clusters[minJ], minDist / 2]);
+
+    const newCluster = clusters[minI].concat(clusters[minJ]);
+    clusters[minI] = newCluster;
+    clusters.splice(minJ, 1);
+
+    updateDistanceMatrix(distanceMatrix, minI, minJ);
+  }
+
+  return result;
+}
+
+function findMinIndices(matrix) {
+  let minI = 0;
+  let minJ = 1;
+  let minDist = matrix[minI][minJ];
+
+  for (let i = 0; i < matrix.length; i++) {
+    for (let j = i + 1; j < matrix[i].length; j++) {
+      if (matrix[i][j] < minDist) {
+        minDist = matrix[i][j];
+        minI = i;
+        minJ = j;
+      }
+    }
+  }
+  return [minI, minJ];
+}
+
+function updateDistanceMatrix(matrix, minI, minJ) {
+  for (let k = 0; k < matrix.length; k++) {
+    if (k === minI || k === minJ) continue;
+    const newDist =
+      (matrix[minI][k] * matrix[minI].length +
+        matrix[minJ][k] * matrix[minJ].length) /
+      (matrix[minI].length + matrix[minJ].length);
+    matrix[minI][k] = newDist;
+    matrix[k][minI] = newDist;
+  }
+
+  matrix.splice(minJ, 1);
+  matrix.forEach((row) => row.splice(minJ, 1));
+}
+
+function euclideanDistance(pointA, pointB) {
+  var sum = 0;
+  for (var i = 0; i < pointA.length; i++) {
+    var difference = pointA[i] - pointB[i];
+    sum += difference * difference;
+  }
+  return Math.sqrt(sum);
+}
+
+function doubleClustering(
+  matrix,
+  rowNames,
+  colNames,
+  metric = euclideanDistance
+) {
+  const distanceMatrix = createDistanceMatrix(matrix, metric, false);
+  let rowOrder = flatten(upgma(distanceMatrix).slice(-1)).slice(
+    0,
+    upgma(distanceMatrix).length + 1
+  );
+
+  const transposedMatrix = matrix[0].map((_, i) => matrix.map((row) => row[i]));
+  const distanceMatrixTransposed = createDistanceMatrix(
+    transposedMatrix,
+    metric,
+    false
+  );
+  let colOrder = flatten(upgma(distanceMatrixTransposed).slice(-1)).slice(
+    0,
+    upgma(distanceMatrixTransposed).length + 1
+  );
+
+  const sortedMatrix = rowOrder.map((i) => colOrder.map((j) => matrix[i][j]));
+  const sortedRowNames = rowOrder.map((i) => rowNames[i]);
+  const sortedColNames = colOrder.map((i) => colNames[i]);
+
+  return {
+    matrix: sortedMatrix,
+    rowNames: sortedRowNames,
+    colNames: sortedColNames,
+  };
+}
+
+// import * as mSigPortalPlotting from "./index.js";
+
+const mSigSDK = (function () {
+  /**
+   * @namespace mSigPortalData
+   */
+
+  /**
+   * @namespace mSigPortalPlots
+   */
+
+  /**
+   * @namespace ICGC
+   */
+
+  //#region Mutational Signatures
+
+  /**
+
+Retrieves the mutational signature options from the specified API endpoint.
+@async
+@function
+@memberof mSigPortalData
+@name getMutationalSignaturesOptions
+@param {string} [genomeDataType="WGS"] - The genome data type to use. Defaults to "WGS".
+@param {string} [mutationType="SBS"] - The mutation type to use. Defaults to "SBS".
+@returns {Promise} A Promise that resolves to the mutational signature options in JSON format.
+@example
+const mutationalSignatures = await getMutationalSignaturesOptions("WGS", "SBS");
+console.log(mutationalSignatures);
+*/
+  async function getMutationalSignaturesOptions(
+    genomeDataType = "WGS",
+    mutationType = "SBS"
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature_options?
+    source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&offset=0`;
+    const cacheName = "getMutationalSignaturesOptions";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
+  /**
+
+Retrieves mutational signatures data from the specified endpoint and returns it as JSON.
+@async
+@function
+@memberof mSigPortalData
+@param {string} [genomeDataType="WGS"] - The type of genome data to use. Defaults to "WGS".
+@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the signature set to use. Defaults to "COSMIC_v3_Signatures_GRCh37_SBS96".
+@param {string} [mutationType="SBS"] - The type of mutation to analyze. Defaults to "SBS".
+@param {number} [numberofResults=10] - The number of results to retrieve. Defaults to 10.
+@returns {Promise<Object>} - A Promise that resolves to the unformatted mutational signatures data as JSON.
+*/
+
+  async function getMutationalSignaturesData(
+    genomeDataType = "WGS",
+    signatureSetName = "COSMIC_v3_Signatures_GRCh37_SBS96",
+    mutationType = "SBS",
+    numberofResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature?
+    source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&matrix=96&signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
+    const cacheName = "getMutationalSignaturesData";
+    const unformattedData = await (
+      await fetchURLAndCache$1(cacheName, url)
+    ).json();
+    extractMutationalSpectra(
+      unformattedData,
+      "signatureName"
+    );
+    return unformattedData;
+  }
+
+  /**
+
+Returns a summary of mutational signatures based on the provided signature set name and number of results.
+@async
+@function
+@memberof mSigPortalData
+@param {number} [numberofResults=10] - The number of results to retrieve. Defaults to 10 if not provided.
+@param {string} [signatureSetName="COSMIC_v3.3_Signatures"] - The name of the signature set to retrieve. Defaults to "COSMIC_v3.3_Signatures" if not provided.
+@returns {Promise<Object>} - A Promise that resolves to an object representing the mutational signature summary.
+@throws {Error} - Throws an error if there was an issue fetching the mutational signature summary.
+@example
+const summary = await getMutationalSignaturesSummary(20, "COSMIC_v3.3_Signatures");
+console.log(summary);
+*/
+
+  async function getMutationalSignaturesSummary(
+    numberofResults = 10,
+    signatureSetName = "COSMIC_v3.3_Signatures"
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature_summary?signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
+    const cacheName = "getMutationalSignaturesSummary";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+  //#endregion
+
+  //#region Mutational Spectrum
+
+  /**
+
+Retrieves mutational spectrum options from the mutational signatures API.
+@async
+@memberof mSigPortalData
+@function
+@param {string} [study="PCAWG"] - The name of the study to retrieve options for. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The genome data type to retrieve options for. Defaults to "WGS".
+@param {string} [cancerType="Lung-AdenoCA"] - The cancer type to retrieve options for. Defaults to "Lung-AdenoCA".
+@param {number} [numberOfResults=10] - The number of results to retrieve. Defaults to 10.
+@returns {Promise<Object>} A Promise that resolves to the JSON response from the mutational signatures API.
+*/
+
+  async function getMutationalSpectrumOptions(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    cancerType = "Lung-AdenoCA",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum_options?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&offset=0&limit=${numberOfResults}`;
+    const cacheName = "getMutationalSpectrumOptions";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
+  /**
+
+* Fetches mutational spectrum data from the Cancer Genomics Data Server API and returns it in a formatted way.
+* @async
+* @function getMutationalSpectrumData
+* @memberof mSigPortalData
+* @param {string} [study="PCAWG"] - The study identifier.
+* @param {string[]|null} [samples=null] - The sample identifier(s) to query data for.
+* @param {string} [genomeDataType="WGS"] - The genome data type identifier.
+* @param {string} [cancerType="Lung-AdenoCA"] - The cancer type identifier.
+* @param {string} [mutationType="SBS"] - The mutation type identifier.
+* @param {number} [matrixSize=96] - The size of the mutational spectrum matrix.
+* @returns {Promise} - A promise that resolves to the formatted mutational spectrum data.
+*/
+  async function getMutationalSpectrumData(
+    study = "PCAWG",
+    samples = null,
+    genomeDataType = "WGS",
+    cancerType = "Lung-AdenoCA",
+    mutationType = "SBS",
+    matrixSize = 96
+  ) {
+    const cacheName = "getMutationalSpectrumData";
+
+    const promises = [];
+    let urls = [];
+
+    if (cancerType == null) {
+      let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
+
+      let unformattedData = await (
+        await fetchURLAndCache$1(cacheName, url)
+      ).json();
+
+      return unformattedData;
+    }
+
+    if (samples === null) {
+      let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
+
+      let unformattedData = await (
+        await fetchURLAndCache$1(cacheName, url)
+      ).json();
+      extractMutationalSpectra(unformattedData, "sample");
+      return unformattedData;
+    } else {
+      samples.forEach((sample) => {
+        urls.push(
+          `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&sample=${sample}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`
+        );
+      });
+    }
+
+    urls.forEach((url) => {
+      promises.push(fetchURLAndCache$1(cacheName, url));
+    });
+
+    const results = await Promise.all(promises);
+
+    const data = await Promise.all(
+      results.map((result) => {
+        return result.json();
+      })
+    );
+
+    extractMutationalSpectra(data.flat(), "sample");
+
+    return data;
+  }
+
+  /**
+
+Fetches the mutational spectrum summary from the mutational signatures API based on the given parameters.
+@async
+@function
+@memberof mSigPortalData
+@param {string} [study="PCAWG"] - The name of the cancer genome study. Default is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genomic data used. Default is "WGS".
+@param {string} [cancerType="Lung-AdenoCA"] - The type of cancer. Default is "Lung-AdenoCA".
+@param {number} [numberOfResults=10] - The number of results to be returned. Default is 10.
+@returns {Promise} - A Promise that resolves to a JSON object representing the mutational spectrum summary.
+@throws {Error} - If the API request fails.
+*/
+
+  async function getMutationalSpectrumSummary(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    cancerType = "Lung-AdenoCA",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum_summary?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
+    const cacheName = "getMutationalSpectrumSummary";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
+  //#endregion
+
+  //#region Mutational Signature Association
+
+  /**
+
+Fetches the mutational signature association options from the API endpoint
+@async
+@function
+@memberof mSigPortalData
+@param {string} [study="PCAWG"] - The name of the study. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data. Defaults to "WGS".
+@param {number} [numberOfResults=10] - The number of results to return. Defaults to 10.
+@returns {Promise<Array>} - A Promise that resolves to an array of mutational signature association options.
+@throws {Error} - If an error occurs during the fetching or caching of the data.
+*/
+
+  async function getMutationalSignatureAssociationOptions(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_association_options?study=${study}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
+    const cacheName = "getMutationalSignatureAssociationOptions";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
+  /**
+
+Retrieves mutational signature association data from a specified cancer study using the provided parameters.
+@async
+@function
+@memberof mSigPortalData
+@param {string} [study="PCAWG"] - The name of the cancer study. Default is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data used. Default is "WGS".
+@param {string} [cancerType="Biliary-AdenoCA"] - The type of cancer. Default is "Biliary-AdenoCA".
+@param {number} [numberOfResults=10] - The maximum number of results to return. Default is 10.
+@returns {Promise<object>} - A Promise that resolves to the JSON response containing the mutational signature association data.
+*/
+
+  async function getMutationalSignatureAssociationData(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    cancerType = "Biliary-AdenoCA",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_association?study=${study}&strategy=${genomeDataType}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
+    const cacheName = "getMutationalSignatureAssociationData";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
+  //#endregion
+
+  //#region Mutational Signature Activity
+
+  /**
+
+Retrieves a list of mutational signature activity options from the mutational signatures API.
+@async
+@function getMutationalSignatureActivityOptions
+@memberof mSigPortalData
+@param {string} [study="PCAWG"] - The name of the study to retrieve mutational signature activity options for. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The genome data type to retrieve mutational signature activity options for. Defaults to "WGS".
+@param {number} [numberOfResults=10] - The number of results to retrieve. Defaults to 10.
+@returns {Promise<Array>} - A promise that resolves with an array of mutational signature activity options.
+*/
+  async function getMutationalSignatureActivityOptions(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity_options?study=${study}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
+    const cacheName = "getMutationalSignatureActivityOptions";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+  /**
+
+Retrieves mutational signature landscape data from the mutational-signatures API.
+@async
+@function
+@memberof mSigPortalData
+@param {string} [study="PCAWG"] - The name of the study. Default value is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data. Default value is "WGS".
+@param {string} [cancerType=""] - The name of the cancer type. Default value is an empty string.
+@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the signature set. Default value is "COSMIC_v3_Signatures_GRCh37_SBS96".
+@param {number} [numberOfResults=10] - The maximum number of results to be returned. Default value is 10.
+@returns {Promise<Object>} - A Promise that resolves to the JSON data of the mutational signature landscape.
+*/
+
+  async function getMutationalSignatureActivityData(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    signatureSetName = "COSMIC_v3_Signatures_GRCh37_SBS96",
+    cancerType = "",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity?study=${study}&strategy=${genomeDataType}&signatureSetName=${signatureSetName}&limit=${numberOfResults}&cancer=${cancerType}&offset=0`;
+    const cacheName = "getMutationalSignatureActivityData";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
+  /**
+
+Retrieves mutational signature landscape data from an API endpoint.
+@async
+@function getMutationalSignatureLandscapeData
+@param {string} [study="PCAWG"] - The study to retrieve data from.
+@param {string} [genomeDataType="WGS"] - The type of genomic data used in the study.
+@param {string} [cancerType=""] - The type of cancer to retrieve data for.
+@param {string} [signatureSetName="COSMIC_v3_Signatures_GRCh37_SBS96"] - The name of the mutational signature set to retrieve.
+@param {number} [numberOfResults=10] - The number of results to retrieve.
+@returns {Promise<object>} - A promise that resolves to an object containing the mutational signature landscape data.
+*/
+  async function getMutationalSignatureLandscapeData(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    cancerType = "",
+    signatureSetName = "COSMIC_v3_Signatures_GRCh37_SBS96",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity?study=${study}&strategy=${genomeDataType}&signatureSetName=${signatureSetName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
+    const cacheName = "getMutationalSignatureLandscapeData";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
+  //#endregion
+
+  //#region Mutational Signature Etiology
+
+  /**
+
+Retrieves the etiology options for a given mutational signature from the Cancer.gov Mutational Signatures API.
+@async
+@function
+@memberof mSigPortalData
+@param {string} [study="PCAWG"] - The name of the study to retrieve etiology options for. Defaults to "PCAWG".
+@param {string} [genomeDataType="WGS"] - The type of genome data to retrieve etiology options for. Defaults to "WGS".
+@param {string} [signatureName="SBS3"] - The name of the mutational signature to retrieve etiology options for. Defaults to "SBS3".
+@param {string} [cancerType=""] - The cancer type to retrieve etiology options for. Defaults to an empty string.
+@param {number} [numberOfResults=10] - The maximum number of results to return. Defaults to 10.
+@returns {Promise<Object>} A promise that resolves to an object representing the etiology options for the specified mutational signature.
+The object will have the following properties:
+etiology: An array of strings representing the possible etiologies for the mutational signature.
+etiology_display: An array of strings representing the display names for the possible etiologies.
+signatureName: The name of the mutational signature.
+study: The name of the study.
+genome_data_type: The type of genome data.
+cancer_type: The cancer type.
+*/
+  async function getMutationalSignatureEtiologyOptions(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    signatureName = "SBS3",
+    cancerType = "",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_etiology_options?study=${study}&strategy=${genomeDataType}&signatureName=${signatureName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
+    const cacheName = "getMutationalSignatureEtiologyOptions";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
+  /**
+
+Retrieves mutational signature etiology data from the Cancer Genomics Research Laboratory (CGR) website.
+@async
+@function getMutationalSignatureEtiologyData
+@memberof mSigPortalData
+@param {string} [study="PCAWG"] - The study name. Default is "PCAWG".
+@param {string} [genomeDataType="WGS"] - The genome data type. Default is "WGS".
+@param {string} [signatureName="SBS3"] - The signature name. Default is "SBS3".
+@param {string} [cancerType=""] - The cancer type. Default is an empty string.
+@param {number} [numberOfResults=10] - The number of results to return. Default is 10.
+@returns {Promise} A promise that resolves to the mutational signature etiology data in JSON format.
+*/
+  async function getMutationalSignatureEtiologyData(
+    study = "PCAWG",
+    genomeDataType = "WGS",
+    signatureName = "SBS3",
+    cancerType = "",
+    numberOfResults = 10
+  ) {
+    const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_etiology?study=${study}&strategy=${genomeDataType}&signatureName=${signatureName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
+    const cacheName = "getMutationalSignatureEtiologyData";
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
+  }
+
   //#endregion
 
   //#region Plot the summary of a dataset
@@ -1970,7 +1960,9 @@ This function creates a heatmap using the cosine similarity matrix for the given
     divID = "cosineSimilarityHeatMap"
   ) {
     let distanceMatrix = await createDistanceMatrix(
-      Object.values(groupedData).map((data) => Object.values(data))
+      Object.values(groupedData).map((data) => Object.values(data)),
+      cosineSimilarity,
+      true
     );
 
     let cosSimilarityMatrix = distanceMatrix.map(function (row) {
@@ -2037,7 +2029,9 @@ Plots a force directed tree of the patients in the study based on their mutation
     maxDepth = 0
   ) {
     let distanceMatrix = await createDistanceMatrix(
-      Object.values(groupedData).map((data) => Object.values(data))
+      Object.values(groupedData).map((data) => Object.values(data)),
+      cosineSimilarity,
+      true
     );
 
     let clusters = await hierarchicalClustering(
@@ -2328,7 +2322,7 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
     let reorderedData = doubleClustering(
       Object.values(dataset).map((data) => Object.values(data)),
       Object.keys(dataset),
-      Object.keys(dataset[Object.keys(dataset)[0]]),
+      Object.keys(dataset[Object.keys(dataset)[0]])
     );
     let data = {
       z: reorderedData.matrix,
