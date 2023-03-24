@@ -264,7 +264,6 @@ function hierarchicalClustering(distanceMatrix, sampleNames) {
 
   let order = flatten(upgma(distanceMatrix).slice(-1)).slice(0, upgma(distanceMatrix).length+1)
   
-
   // Return the final clustering result as a tree
   return buildTree(order, distanceMatrix, sampleNames);
 }
