@@ -261,45 +261,12 @@ function createDistanceMatrix(matrix, metric, similarity) {
 }
 
 function hierarchicalClustering(distanceMatrix, sampleNames) {
-  // Create an array to store the clusters
-  let clusters = [];
 
-  // Initialize each sample as its own cluster
-  for (let i = 0; i < distanceMatrix.length; i++) {
-    clusters.push([i]);
-  }
-
-  // Loop until we have a single cluster left
-  while (clusters.length > 1) {
-    // Find the two closest clusters
-    let minDistance = Infinity;
-    let closestClusters = [];
-
-    for (let i = 0; i < clusters.length; i++) {
-      for (let j = i + 1; j < clusters.length; j++) {
-        // Calculate the distance between clusters i and j
-        let distance = calculateDistance(
-          clusters[i],
-          clusters[j],
-          distanceMatrix
-        );
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestClusters = [i, j];
-        }
-      }
-    }
-
-    // Merge the two closest clusters
-    let mergedCluster = clusters[closestClusters[0]].concat(
-      clusters[closestClusters[1]]
-    );
-    clusters.splice(closestClusters[1], 1);
-    clusters.splice(closestClusters[0], 1, mergedCluster);
-  }
+  let order = flatten(upgma(distanceMatrix).slice(-1)).slice(0, upgma(distanceMatrix).length+1)
+  
 
   // Return the final clustering result as a tree
-  return buildTree(clusters[0], distanceMatrix, sampleNames);
+  return buildTree(order, distanceMatrix, sampleNames);
 }
 
 // This function calculates the average distance between two clusters. It takes in two clusters and a distance matrix as its parameters. The clusters are arrays of indices of the samples in the distance matrix. It finds the average distance between the two clusters and returns the average distance.
