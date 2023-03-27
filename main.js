@@ -773,7 +773,8 @@ This function creates a heatmap using the cosine similarity matrix for the given
     studyName = "PCAWG",
     genomeDataType = "WGS",
     cancerType = "Lung-AdenoCA",
-    divID = "cosineSimilarityHeatMap"
+    divID = "cosineSimilarityHeatMap",
+    conductDoubleClustering = true
   ) {
     let distanceMatrix = await createDistanceMatrix(
       Object.values(groupedData).map((data) => Object.values(data)),
@@ -786,13 +787,20 @@ This function creates a heatmap using the cosine similarity matrix for the given
         return 1 - cell;
       });
     });
-
-    let reorderedData = doubleClustering(
-      cosSimilarityMatrix,
-      Object.keys(groupedData),
-      Object.keys(groupedData)
-    );
-
+    let reorderedData;
+    if (conductDoubleClustering) {
+      reorderedData = doubleClustering(
+        cosSimilarityMatrix,
+        Object.keys(groupedData),
+        Object.keys(groupedData)
+      );
+    } else {
+      reorderedData = {
+        matrix: cosSimilarityMatrix,
+        rowNames: Object.keys(groupedData),
+        colNames: Object.keys(groupedData),
+      };
+    }
     let plotlyData = [
       {
         z: reorderedData.matrix,
@@ -1114,7 +1122,8 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
     exposureData,
     divID,
     relative = true,
-    datasetName = "PCAWG"
+    datasetName = "PCAWG",
+    doubleCluster = true,
   ) {
     let dataset = deepCopy(exposureData);
     // Remove the rnorm values from each sample of the exposure data
@@ -1134,12 +1143,21 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
         }
       }
     }
-
-    let reorderedData = doubleClustering(
+    let reorderedData;
+    if (doubleCluster){
+    reorderedData = doubleClustering(
       Object.values(dataset).map((data) => Object.values(data)),
       Object.keys(dataset),
       Object.keys(dataset[Object.keys(dataset)[0]])
     );
+  }else{
+    console.log('data is not ordered');
+    reorderedData = {
+      matrix: Object.values(dataset).map((data) => Object.values(data)),
+      rowNames: Object.keys(dataset),
+      colNames: Object.keys(dataset[Object.keys(dataset)[0]]),
+    }
+  }
     let data = {
       z: reorderedData.matrix,
       x: reorderedData.colNames,
