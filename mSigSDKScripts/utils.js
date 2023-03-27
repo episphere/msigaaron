@@ -30,19 +30,15 @@ function deepCopy(obj) {
 
 // Solve argmin_x || Ax - b ||_2 for x>=0. A is a matrix, b is a vector.
 // Output is a vector x with the same length as b. The rnrom is the residual || Ax - b ||^2.
-async function nnls(A, b, maxiter = 3 * A[0].length) {
+function nnls(A, b, maxiter = 3 * A[0].length) {
+  // Transpose a matrix
   const transpose = (matrix) =>
     matrix[0].map((_, i) => matrix.map((row) => row[i]));
-  A = transpose(A);
-  const dot = (a, b) => {
-    if (a[0].length === undefined) {
-      // Vector-vector multiplication
-      return a.map((_, i) => a[i] * b[i]).reduce((sum, x) => sum + x);
-    } else {
-      // Matrix-vector multiplication
-      return a.map((row) => row.reduce((sum, x, i) => sum + x * b[i], 0));
-    }
-  };
+
+  // Transpose A, and store the result in At
+  const At = transpose(A);
+
+  // Multiply a matrix by a vector or another matrix
   const matrixMultiply = (A, B) => {
     if (B[0].length === undefined) {
       // Matrix-vector multiplication
@@ -59,38 +55,50 @@ async function nnls(A, b, maxiter = 3 * A[0].length) {
       );
     }
   };
-  const vectorSubtraction = (a, b) => a.map((x, i) => x - b[i]);
-  const vectorAddition = (a, b) => a.map((x, i) => x + b[i]);
-  const vectorScale = (a, scalar) => a.map((x) => x * scalar);
-  const vectorNorm = (a) => Math.sqrt(dot(a, a));
 
-  const At = transpose(A);
+  // Multiply a matrix by its transpose
   const AtA = matrixMultiply(At, A);
+
+  // Multiply A's transpose by b
   const Atb = matrixMultiply(At, b);
 
+  // Initialize x with all zeros
   let x = Array(A[0].length).fill(0);
   let gradient;
   let rnorm;
 
+  // Iterate for maxiter iterations
   for (let iter = 0; iter < maxiter; iter++) {
+    // Compute the gradient
     gradient = vectorSubtraction(matrixMultiply(AtA, x), Atb);
+
+    // Compute the negative of the gradient
     let negativeGradient = gradient.map((x) => -x);
 
+    // Initialize alpha as 1
     let alpha = 1;
+
+    // Compute the new value of x
     let new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
 
+    // Halve alpha until the new value of x is nonnegative
     while (new_x.some((val) => val < 0)) {
       alpha /= 2;
       new_x = vectorAddition(x, vectorScale(negativeGradient, alpha));
     }
 
+    // Update x
     x = new_x;
 
+    // Check if the gradient is small enough to stop iterating
     if (vectorNorm(gradient) <= 1e-8) {
       break;
     }
   }
 
+  // Compute the residual norm. 
+  // The square of the Euclidean distance between two vectors u and v can be expressed as the dot product 
+  // of their difference with itself, which is equivalent to ||u - v||^2 = dot(u - v, u - v). 
   rnorm = Math.sqrt(
     dot(
       vectorSubtraction(matrixMultiply(A, x), b),
