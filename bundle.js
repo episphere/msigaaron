@@ -1986,6 +1986,7 @@ This function creates a heatmap using the cosine similarity matrix for the given
         colNames: Object.keys(groupedData),
       };
     }
+
     let plotlyData = [
       {
         z: reorderedData.matrix,
@@ -2310,7 +2311,7 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
     relative = true,
     datasetName = "PCAWG",
     doubleCluster = true,
-    colorscale = "Jet"
+    colorscale = "Custom"
   ) {
     let dataset = deepCopy(exposureData);
     // Remove the rnorm values from each sample of the exposure data
@@ -2345,6 +2346,21 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
       colNames: Object.keys(dataset[Object.keys(dataset)[0]]),
     };
   }
+  if (colorscale == "custom"){
+    colorscale = [
+      ['0.0', 'rgb(49,54,149)'],
+      ['0.025', 'rgb(69,117,180)'],
+      ['0.05', 'rgb(116,173,209)'],
+      ['0.075', 'rgb(171,217,233)'],
+      ['0.1', 'rgb(224,243,248)'],
+      ['0.125', 'rgb(254,224,144)'],
+      ['0.15', 'rgb(253,174,97)'],
+      ['0.175', 'rgb(244,109,67)'],
+      ['0.2', 'rgb(215,48,39)'],
+      ['1.0', 'rgb(165,0,38)'],
+    ];
+  }
+
     let data = {
       z: reorderedData.matrix,
       x: reorderedData.colNames,
