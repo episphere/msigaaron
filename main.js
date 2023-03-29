@@ -774,7 +774,8 @@ This function creates a heatmap using the cosine similarity matrix for the given
     genomeDataType = "WGS",
     cancerType = "Lung-AdenoCA",
     divID = "cosineSimilarityHeatMap",
-    conductDoubleClustering = true
+    conductDoubleClustering = true,
+    colorscale = "RdBu"
   ) {
     let distanceMatrix = await createDistanceMatrix(
       Object.values(groupedData).map((data) => Object.values(data)),
@@ -807,6 +808,7 @@ This function creates a heatmap using the cosine similarity matrix for the given
         x: reorderedData.rowNames,
         y: reorderedData.colNames,
         type: "heatmap",
+        colorscale: colorscale,
       },
     ];
 
@@ -1124,6 +1126,7 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
     relative = true,
     datasetName = "PCAWG",
     doubleCluster = true,
+    colorscale = "Jet"
   ) {
     let dataset = deepCopy(exposureData);
     // Remove the rnorm values from each sample of the exposure data
@@ -1163,7 +1166,7 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
       x: reorderedData.colNames,
       y: reorderedData.rowNames,
       type: "heatmap",
-      colorscale: "Viridis",
+      colorscale: colorscale,
     };
 
     let layout = {
