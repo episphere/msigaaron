@@ -6,7 +6,22 @@ import * as am5hierarchy from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/
 
 import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.3.7/themes/Animated.js/+esm";
 
-import { default as plotMutationalProfile } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs96.js";
+import { default as plotMutationalProfileSBS96 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs96.js";
+import { default as plotMutationalProfileSBS192 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs192.js";
+import { default as plotMutationalProfileSBS288 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs288.js";
+import { default as plotMutationalProfileSBS384 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs384.js";
+import { default as plotMutationalProfileSBS1536 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs1536.js";
+
+import { default as plotMutationalProfileDBS78 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/dbs78.js";
+import { default as plotMutationalProfileDBS186 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/dbs186.js";
+
+import { default as plotMutationalProfileID28 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id28.js";
+import { default as plotMutationalProfileID29 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id29.js";
+import { default as plotMutationalProfileID83 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id83.js";
+import { default as plotMutationalProfileID415 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id415.js";
+import { default as plotMutationalProfileRS32 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/rs32.js";
+
+
 import {
   obtainICGCDataMAF,
   convertMatrix,
@@ -621,14 +636,22 @@ Renders a plot of the mutational spectra for one or more patients in a given div
   async function plotPatientMutationalSpectrum(
     mutationalSpectra,
     matrixSize = 96,
+    mutationType = "SBS",
     divID = "mutationalSpectrumMatrix"
   ) {
+    matrixSize = mutationalSpectra[0].length;
+    
     const numberOfPatients = Object.keys(mutationalSpectra).length;
+
+    if (numberOfPatients == 1){
+      mutationType = mutationalSpectra[0][0].profile;
+    }
+
     if (numberOfPatients == 0) {
       $(`#${divID}`).html(
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
-    } else if (numberOfPatients > 1) {
+    } else if (numberOfPatients > 1 && matrixSize == 96 && mutationType == "SBS") {
       const layout = {
         title: `Mutational Spectra for ${Object.keys(mutationalSpectra).join(
           ", "
@@ -646,7 +669,56 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       }));
 
       Plotly.default.newPlot(divID, traces, layout);
-    } else {
+    } else if (numberOfPatients == 1 && matrixSize == 96 && mutationType == "SBS") {
+      let traces = plotMutationalProfileSBS96(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (numberOfPatients == 1 && matrixSize == 192 && mutationType == "SBS") {
+      let traces = plotMutationalProfileSBS192(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }  else if (numberOfPatients == 1 && matrixSize == 288 && mutationType == "SBS") {
+      let traces = plotMutationalProfileSBS288(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (numberOfPatients == 1 && matrixSize == 384 && mutationType == "SBS") {
+      let traces = plotMutationalProfileSBS384(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }  else if (numberOfPatients == 1 && matrixSize == 1536 && mutationType == "SBS") {
+      let traces = plotMutationalProfileSBS1536(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }   else if (numberOfPatients == 1 && matrixSize == 78 && mutationType == "DBS") {
+      let traces = plotMutationalProfileDBS78(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (numberOfPatients == 1 && matrixSize == 186 && mutationType == "DBS") {
+      let traces = plotMutationalProfileDBS186(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }  else if (numberOfPatients == 1 && matrixSize == 28 && mutationType == "ID") {
+      let traces = plotMutationalProfileID28(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }  else if (numberOfPatients == 1 && matrixSize == 29 && mutationType == "ID") {
+      let traces = plotMutationalProfileID29(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }  else if (numberOfPatients == 1 && matrixSize == 83 && mutationType == "ID") {
+      let traces = plotMutationalProfileID83(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }  else if (numberOfPatients == 1 && matrixSize == 415 && mutationType == "ID") {
+      let traces = plotMutationalProfileID415(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (numberOfPatients == 1 && matrixSize == 32 && mutationType == "RS") {
+      let traces = plotMutationalProfileRS32(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } 
+    else {
       let traces = [];
 
       const layout = {
@@ -1148,34 +1220,34 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
       }
     }
     let reorderedData;
-    if (doubleCluster){
-    reorderedData = doubleClustering(
-      Object.values(dataset).map((data) => Object.values(data)),
-      Object.keys(dataset),
-      Object.keys(dataset[Object.keys(dataset)[0]])
-    );
-  }else{
-    console.log('data is not ordered');
-    reorderedData = {
-      matrix: Object.values(dataset).map((data) => Object.values(data)),
-      rowNames: Object.keys(dataset),
-      colNames: Object.keys(dataset[Object.keys(dataset)[0]]),
+    if (doubleCluster) {
+      reorderedData = doubleClustering(
+        Object.values(dataset).map((data) => Object.values(data)),
+        Object.keys(dataset),
+        Object.keys(dataset[Object.keys(dataset)[0]])
+      );
+    } else {
+      console.log("data is not ordered");
+      reorderedData = {
+        matrix: Object.values(dataset).map((data) => Object.values(data)),
+        rowNames: Object.keys(dataset),
+        colNames: Object.keys(dataset[Object.keys(dataset)[0]]),
+      };
     }
-  }
-  if (colorscale == "custom"){
-    colorscale = [
-      ['0.0', 'rgb(49,54,149)'],
-      ['0.025', 'rgb(69,117,180)'],
-      ['0.05', 'rgb(116,173,209)'],
-      ['0.075', 'rgb(171,217,233)'],
-      ['0.1', 'rgb(224,243,248)'],
-      ['0.125', 'rgb(254,224,144)'],
-      ['0.15', 'rgb(253,174,97)'],
-      ['0.175', 'rgb(244,109,67)'],
-      ['0.2', 'rgb(215,48,39)'],
-      ['1.0', 'rgb(165,0,38)'],
-    ];
-  }
+    if (colorscale == "custom") {
+      colorscale = [
+        ["0.0", "rgb(49,54,149)"],
+        ["0.025", "rgb(69,117,180)"],
+        ["0.05", "rgb(116,173,209)"],
+        ["0.075", "rgb(171,217,233)"],
+        ["0.1", "rgb(224,243,248)"],
+        ["0.125", "rgb(254,224,144)"],
+        ["0.15", "rgb(253,174,97)"],
+        ["0.175", "rgb(244,109,67)"],
+        ["0.2", "rgb(215,48,39)"],
+        ["1.0", "rgb(165,0,38)"],
+      ];
+    }
 
     let data = {
       z: reorderedData.matrix,
@@ -1256,7 +1328,6 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
     fitMutationalSpectraToSignatures,
     plotPatientMutationalSignaturesExposure,
     plotDatasetMutationalSignaturesExposure,
-    plotMutationalProfile,
   };
 })();
 
