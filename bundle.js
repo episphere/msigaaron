@@ -5513,6 +5513,140 @@ function sbs192(data1, data2) {
   };
 }
 
+function dbs78(data1, data2, tab) {
+  const colors = {
+    AC: '#09BCED',
+    AT: '#0266CA',
+    CC: '#9FCE62',
+    CG: '#006501',
+    CT: '#FF9898',
+    GC: '#E22925',
+    TA: '#FEB065',
+    TC: '#FD8000',
+    TG: '#CB98FD',
+    TT: '#4C0299',
+  };
+
+  const mutationRegex = /^(.{2})/;
+  const mutationLabels = (e) => `<b>${e.mutation}>NN</b>`;
+  const formatTickLabels = (mutationGroups) =>
+    mutationGroups
+      .map(({ data }) => data.map((e) => e.mutationType.slice(-2)))
+      .flat();
+
+  if (tab === 'pc') {
+    return compareProfiles(
+      data1,
+      data2,
+      colors,
+      mutationRegex,
+      mutationLabels,
+      formatTickLabels
+    );
+  } else {
+    return MsIndividualComparison(
+      data1,
+      data2,
+      colors,
+      mutationRegex,
+      mutationLabels,
+      formatTickLabels
+    );
+  }
+}
+
+function id83(data1, data2, tab) {
+  const colors = {
+    '1:Del:C': '#FBBD6F',
+    '1:Del:T': '#FE8002',
+    '1:Ins:C': '#AEDD8A',
+    '1:Ins:T': '#35A12E',
+    '2:Del:R': '#FCC9B4',
+    '3:Del:R': '#FB8969',
+    '4:Del:R': '#F04432',
+    '5:Del:R': '#BB1A1A',
+    '2:Ins:R': '#CFDFF0',
+    '3:Ins:R': '#93C3DE',
+    '4:Ins:R': '#4B97C7',
+    '5:Ins:R': '#1863AA',
+    '2:Del:M': '#E1E1EE',
+    '3:Del:M': '#B5B5D6',
+    '4:Del:M': '#8482BC',
+    '5:Del:M': '#62409A',
+  };
+
+  const mutationRegex = /^(.{7})/;
+  const mutationLabels = (e) =>
+    e.data.length > 3 ? e.mutation : e.mutation[0];
+  const formatTickLabels = (mutationGroups) =>
+    mutationGroups
+      .map(({ data }) =>
+        data.map((_, index) => (index >= 5 ? index + 1 + '+' : index + 1))
+      )
+      .flat();
+  if (tab === 'pc') {
+    return compareProfiles(
+      data1,
+      data2,
+      colors,
+      mutationRegex,
+      mutationLabels,
+      formatTickLabels
+    );
+  } else {
+    return MsIndividualComparison(
+      data1,
+      data2,
+      colors,
+      mutationRegex,
+      mutationLabels,
+      formatTickLabels
+    );
+  }
+}
+
+function rs32(data1, data2, tab) {
+  const colors = {
+    AC: '#09BCED',
+    AT: '#0266CA',
+    CC: '#9FCE62',
+    CG: '#006501',
+    CT: '#FF9898',
+    GC: '#E22925',
+    TA: '#FEB065',
+    TC: '#FD8000',
+    TG: '#CB98FD',
+    TT: '#4C0299',
+  };
+
+  const mutationRegex = /^(.{2})/;
+  const mutationLabels = (e) => `<b>${e.mutation}>NN</b>`;
+  const formatTickLabels = (mutationGroups) =>
+    mutationGroups
+      .map(({ data }) => data.map((e) => e.mutationType.slice(-2)))
+      .flat();
+
+  if (tab === 'pc') {
+    return compareProfiles(
+      data1,
+      data2,
+      colors,
+      mutationRegex,
+      mutationLabels,
+      formatTickLabels
+    );
+  } else {
+    return MsIndividualComparison(
+      data1,
+      data2,
+      colors,
+      mutationRegex,
+      mutationLabels,
+      formatTickLabels
+    );
+  }
+}
+
 //#region Retrieving SSM Files from ICGC Data Portal and Converting to MAF File
 
   
@@ -7106,13 +7240,9 @@ Renders a plot of the mutational spectra for one or more patients in a given div
     divID = "mutationalSpectrumMatrix"
   ) {
     let matrixSize = mutationalSpectra[0].length;
-    let mutationType = "SBS";
+    let mutationType = mutationalSpectra[0][0].profile;
     const numberOfPatients = Object.keys(mutationalSpectra).length;
     console.log(numberOfPatients, mutationType, matrixSize);
-    if (numberOfPatients == 1) {
-      mutationType = mutationalSpectra[0][0].profile;
-    }
-
 
     if (numberOfPatients == 0) {
       $(`#${divID}`).html(
@@ -7210,7 +7340,7 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       matrixSize == 78 &&
       mutationType == "DBS"
     ) {
-      let traces = plotMutationalProfileDBS78Comparison(mutationalSpectra[0], mutationalSpectra[1]);
+      let traces = dbs78(mutationalSpectra[0], mutationalSpectra[1], 'pc');
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else if (
@@ -7250,7 +7380,7 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       matrixSize == 83 &&
       mutationType == "ID"
     ) {
-      let traces = plotMutationalProfileID83Comparison(mutationalSpectra[0], mutationalSpectra[1]);
+      let traces = id83(mutationalSpectra[0], mutationalSpectra[1], 'pc');
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else if (
@@ -7274,7 +7404,7 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       matrixSize == 32 &&
       mutationType == "RS"
     ) {
-      let traces = plotMutationalProfileRS32Comparison(mutationalSpectra[0], mutationalSpectra[1]);
+      let traces = rs32(mutationalSpectra[0], mutationalSpectra[1]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else {
