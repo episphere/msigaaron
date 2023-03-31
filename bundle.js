@@ -5136,14 +5136,12 @@ Renders a plot of the mutational spectra for one or more patients in a given div
   // This function plots the mutational spectrum for the given parameters.
   async function plotPatientMutationalSpectrum(
     mutationalSpectra,
-    matrixSize = 96,
-    mutationType = "SBS",
     divID = "mutationalSpectrumMatrix"
   ) {
-    matrixSize = mutationalSpectra[0].length;
-
+    let matrixSize = mutationalSpectra[0].length;
+    let mutationType = "SBS";
     const numberOfPatients = Object.keys(mutationalSpectra).length;
-
+    console.log(numberOfPatients, mutationType, matrixSize);
     if (numberOfPatients == 1) {
       mutationType = mutationalSpectra[0][0].profile;
     }
@@ -5157,6 +5155,7 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       matrixSize == 96 &&
       mutationType == "SBS"
     ) {
+      mutationalSpectra = extractMutationalSpectra(mutationalSpectra);
       const layout = {
         title: `Mutational Spectra for ${Object.keys(mutationalSpectra).join(
           ", "
@@ -5401,6 +5400,7 @@ This function creates a heatmap using the cosine similarity matrix for the given
     conductDoubleClustering = true,
     colorscale = "RdBu"
   ) {
+    groupedData = extractMutationalSpectra(groupedData);
     let distanceMatrix = await createDistanceMatrix(
       Object.values(groupedData).map((data) => Object.values(data)),
       cosineSimilarity,
@@ -5479,6 +5479,7 @@ Plots a force directed tree of the patients in the study based on their mutation
     divID = "forceDirectedTree",
     maxDepth = 0
   ) {
+    groupedData = extractMutationalSpectra(groupedData);
     let distanceMatrix = await createDistanceMatrix(
       Object.values(groupedData).map((data) => Object.values(data)),
       cosineSimilarity,
@@ -5508,8 +5509,6 @@ Plots a force directed tree of the patients in the study based on their mutation
     if (maxDepth != 0) {
       formattedClusters = limitDepth(formattedClusters, maxDepth);
     }
-
-    console.log(formattedClusters, maxDepth);
 
     generateForceDirectedTree(formattedClusters, divID);
 
@@ -5594,6 +5593,7 @@ Plots a UMAP visualization of the input data.
     minDist = 0.1,
     nNeighbors = 15
   ) {
+    data = extractMutationalSpectra(data);
     let umap = new UMAP.default.UMAP({
       nComponents: nComponents,
       minDist: minDist,
