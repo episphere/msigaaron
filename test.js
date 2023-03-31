@@ -1,13 +1,10 @@
 mSigSDK = await (await import("../main.js")).mSigSDK;
-cancerType = "Lung-AdenoCA"
-visualizationData = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSpectrumData(
+mutationalSpectrumData = await mSigSDK.mSigPortal.mSigPortalData.getMutationalSpectrumData(
     "PCAWG",
-    null,
+    ["SP99181", "SP98955"],
     "WGS",
-    cancerType,
-    "SBS",
-    96,
+    "Liver-HCC",
+    "ID",
+    83,
 );
-extractedData = mSigSDK.mSigPortal.mSigPortalData.extractMutationalSpectra(visualizationData)
-
-cosSimilarity = mSigSDK.mSigPortal.mSigPortalPlots.plotCosineSimilarityHeatMap(extractedData, "PCAWG", "WGS", "Lung-AdenoCA", "cosineSimilarityHeatMap");
+mSigSDK.mSigPortal.mSigPortalPlots.plotPatientMutationalSpectrum(mutationalSpectrumData, "mutationalSpectrumMatrix");

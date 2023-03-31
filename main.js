@@ -21,6 +21,16 @@ import { default as plotMutationalProfileID83 } from "./nci-webtools-dceg-mSigPo
 import { default as plotMutationalProfileID415 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id415.js";
 import { default as plotMutationalProfileRS32 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/rs32.js";
 
+import {default as plotMutationalProfileSBS96Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/sbs96.js";
+import {default as plotMutationalProfileSBS192Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/sbs192.js";
+import {default as plotMutationalProfileDBS78Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/dbs78.js";
+import {default as plotMutationalProfileID83Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/id83.js";
+import {default as plotMutationalProfileRS32Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/rs32.js";
+
+
+
+
+
 import {
   obtainICGCDataMAF,
   convertMatrix,
@@ -637,19 +647,16 @@ Renders a plot of the mutational spectra for one or more patients in a given div
     divID = "mutationalSpectrumMatrix"
   ) {
     let matrixSize = mutationalSpectra[0].length;
-    let mutationType = "SBS";
+    let mutationType = mutationalSpectra[0][0].profile;
     const numberOfPatients = Object.keys(mutationalSpectra).length;
     console.log(numberOfPatients, mutationType, matrixSize);
-    if (numberOfPatients == 1) {
-      mutationType = mutationalSpectra[0][0].profile;
-    }
 
     if (numberOfPatients == 0) {
       $(`#${divID}`).html(
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
     } else if (
-      numberOfPatients > 1 &&
+      numberOfPatients > 2 &&
       matrixSize == 96 &&
       mutationType == "SBS"
     ) {
@@ -672,6 +679,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
 
       Plotly.default.newPlot(divID, traces, layout);
     } else if (
+      numberOfPatients == 2 &&
+      matrixSize == 96 &&
+      mutationType == "SBS"
+    ) {
+      let traces = plotMutationalProfileSBS96Comparison(mutationalSpectra[0], mutationalSpectra[1]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
       numberOfPatients == 1 &&
       matrixSize == 96 &&
       mutationType == "SBS"
@@ -688,6 +703,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else if (
+      numberOfPatients == 2 &&
+      matrixSize == 192 &&
+      mutationType == "SBS"
+    ) {
+      let traces = plotMutationalProfileSBS192Comparison(mutationalSpectra[0], mutationalSpectra[1]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }else if (
       numberOfPatients == 1 &&
       matrixSize == 288 &&
       mutationType == "SBS"
@@ -717,6 +740,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       mutationType == "DBS"
     ) {
       let traces = plotMutationalProfileDBS78(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 2 &&
+      matrixSize == 78 &&
+      mutationType == "DBS"
+    ) {
+      let traces = plotMutationalProfileDBS78Comparison(mutationalSpectra[0], mutationalSpectra[1], 'pc');
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else if (
@@ -751,6 +782,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       let traces = plotMutationalProfileID83(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
+    }else if (
+      numberOfPatients == 2 &&
+      matrixSize == 83 &&
+      mutationType == "ID"
+    ) {
+      let traces = plotMutationalProfileID83Comparison(mutationalSpectra[0], mutationalSpectra[1], 'pc');
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
     } else if (
       numberOfPatients == 1 &&
       matrixSize == 415 &&
@@ -765,6 +804,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       mutationType == "RS"
     ) {
       let traces = plotMutationalProfileRS32(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }else if (
+      numberOfPatients == 2 &&
+      matrixSize == 32 &&
+      mutationType == "RS"
+    ) {
+      let traces = plotMutationalProfileRS32Comparison(mutationalSpectra[0], mutationalSpectra[1]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else {

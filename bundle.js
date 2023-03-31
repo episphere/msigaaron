@@ -3,11 +3,12 @@ import * as Plotly from 'https://cdn.jsdelivr.net/npm/plotly.js-dist/+esm';
 import * as am5 from 'https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/+esm';
 import * as am5hierarchy from 'https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/hierarchy/+esm';
 import * as am5themes_Animated from 'https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.3.7/themes/Animated.js/+esm';
+import 'https://cdn.jsdelivr.net/npm/jstat/+esm';
 import * as localforage from 'https://cdn.jsdelivr.net/npm/localforage/+esm';
 import * as pako from 'https://cdn.jsdelivr.net/npm/pako/+esm';
 import * as Papa from 'https://cdn.jsdelivr.net/npm/papaparse/+esm';
 
-function groupDataByMutation(
+function groupDataByMutation$1(
   apiData,
   groupRegex,
   mutationGroupSort = false,
@@ -29,19 +30,19 @@ function groupDataByMutation(
   return mutationGroupSort ? groupedData.sort(mutationGroupSort) : groupedData;
 }
 
-function getTotalMutations(apiData) {
+function getTotalMutations$1(apiData) {
   return apiData.reduce(
     (total, e) => total + e.mutations || e.contribution || 0,
     0
   );
 }
 
-function getMaxMutations(apiData) {
+function getMaxMutations$1(apiData) {
   return Math.max(...apiData.map((e) => e.mutations || e.contribution || 0));
 }
 
 function createSampleAnnotation(apiData, text = '', yPos = 0.88) {
-  const totalMutations = getTotalMutations(apiData);
+  const totalMutations = getTotalMutations$1(apiData);
   return {
     xref: 'paper',
     yref: 'paper',
@@ -104,6 +105,91 @@ function createMutationAnnotations(data, appendedText = '') {
     align: 'center',
   }));
 }
+
+const colorPallet1 = [
+  '#1F77B4',
+  '#FF7F0F',
+  '#2DA02C',
+  '#D62728',
+  '#9467BD',
+  '#8C564B',
+];
+
+const colorPallet = {
+  1: '#4a9855',
+  2: '#e2a8ab',
+  3: '#40004b',
+  4: '#5aa1ca',
+  5: '#305d39',
+  6: '#785940',
+  '7a': '#6e70b7',
+  '7b': '#ff7f00',
+  '7c': '#fec44f',
+  '7d': '#846a2a',
+  8: '#cab2d6',
+  9: '#f4a582',
+  '10a': '#8dd3c7',
+  '10b': '#5e4fa2',
+  '10c': '#761429',
+  11: '#9e0142',
+  12: '#ffed6f',
+  13: '#e41a1c',
+  14: '#ffffbf',
+  15: '#4d4d4d',
+  16: '#513276',
+  17: '#ef4c7d',
+  '17a': '#df4c7d',
+  '17b': '#08519c',
+  18: '#b3de69',
+  19: '#dfc27d',
+  20: '#b2182b',
+  21: '#9ecae1',
+  22: '#01665e',
+  23: '#d53e4f',
+  24: '#1c9099',
+  25: '#35978f',
+  26: '#ec7014',
+  27: '#f46d43',
+  28: '#de77ae',
+  29: '#fdae61',
+  30: '#d9d9d9',
+  31: '#f781bf',
+  32: '#dd1c77',
+  33: '#b25d7e',
+  34: '#fee08b',
+  35: '#fc8d59',
+  36: 'yellow',
+  37: '#e6f598',
+  38: '#abdda4',
+  39: '#636363',
+  40: '#b15928',
+  41: '#fccde5',
+  42: '#ae017e',
+  43: '#66c2a5',
+  44: '#8c6bb1',
+  45: '#3288bd',
+  46: '#e6f598',
+  47: '#bababa',
+  48: '#5e4fa2',
+  49: '#40004b',
+  50: '#762a83',
+  51: '#9970ab',
+  52: '#c2a5cf',
+  53: '#e7d4e8',
+  54: '#fcc5c0',
+  55: '#d9f0d3',
+  56: '#8c510a',
+  57: '#a6dba0',
+  58: '#5aae61',
+  59: '#1b7837',
+  60: '#00441b',
+  84: '#063C3C',
+  85: '#AA9139',
+  88: '#BB9139',
+  92: '#0E1844',
+  110: '#5E1855',
+  '-others': '#cececa',
+};
 
 const rs32Color = {
   'clustered_del_>10Mb': 'deeppink',
@@ -194,9 +280,9 @@ function SBS96(apiData, title = '') {
     return order.indexOf(a.mutation) - order.indexOf(b.mutation);
   };
 
-  const data = groupDataByMutation(apiData, mutationRegex, mutationGroupSort);
-  const maxMutation = getMaxMutations(apiData);
-  const totalMutations = getTotalMutations(apiData);
+  const data = groupDataByMutation$1(apiData, mutationRegex, mutationGroupSort);
+  const maxMutation = getMaxMutations$1(apiData);
+  const totalMutations = getTotalMutations$1(apiData);
   const mutationTypeNames = data
     .map((group) =>
       group.data.map((e) => ({
@@ -302,19 +388,19 @@ function SBS192(apiData, title = '') {
   const transcribed = apiData.filter((e) => /^T:/.test(e.mutationType));
   const untranscribed = apiData.filter((e) => /^U:/.test(e.mutationType));
 
-  const transcribedGroups = groupDataByMutation(
+  const transcribedGroups = groupDataByMutation$1(
     transcribed,
     mutationRegex,
     mutationGroupSort,
     mutationTypeSort
   );
-  const untranscribedGroups = groupDataByMutation(
+  const untranscribedGroups = groupDataByMutation$1(
     untranscribed,
     mutationRegex,
     mutationGroupSort,
     mutationTypeSort
   );
-  const maxMutation = getMaxMutations(apiData);
+  const maxMutation = getMaxMutations$1(apiData);
 
   const transcribedTraces = {
     name: 'Transcribed Strand',
@@ -463,7 +549,7 @@ function SBS288(data, title = '') {
   //   transcribed.reduce((total, e) => total + e.mutations, 0) +
   //   untranscribed.reduce((total, e) => total + e.mutations, 0) +
   //   neutral.reduce((total, e) => total + e.mutations, 0);
-  const totalMutations = getTotalMutations(data);
+  const totalMutations = getTotalMutations$1(data);
 
   Math.max(
     ...[
@@ -1726,9 +1812,9 @@ function DBS78(apiData, title = '') {
     return order.indexOf(a.mutation) - order.indexOf(b.mutation);
   };
 
-  const data = groupDataByMutation(apiData, mutationRegex, mutationGroupSort);
-  const maxMutation = getMaxMutations(apiData);
-  const totalMutations = getTotalMutations(apiData);
+  const data = groupDataByMutation$1(apiData, mutationRegex, mutationGroupSort);
+  const maxMutation = getMaxMutations$1(apiData);
+  const totalMutations = getTotalMutations$1(apiData);
   const mutationTypeNames = data
     .map((group) => group.data.map((e) => e.mutationType.slice(-2)))
     .flat();
@@ -2421,13 +2507,13 @@ function ID29(apiData, title = '') {
     return order.indexOf(a.mutation) - order.indexOf(b.mutation);
   };
 
-  const data = groupDataByMutation(
+  const data = groupDataByMutation$1(
     apiData,
     groupRegex,
     mutationGroupSort,
     mutationTypeSort
   );
-  const maxMutation = getMaxMutations(apiData);
+  const maxMutation = getMaxMutations$1(apiData);
 
   const mutationTypeNames = data
     .map((group) =>
@@ -2513,7 +2599,7 @@ function ID83(apiData, title = '') {
     return order.indexOf(a.mutation) - order.indexOf(b.mutation);
   };
 
-  const data = groupDataByMutation(apiData, indelRegex, mutationGroupSort);
+  const data = groupDataByMutation$1(apiData, indelRegex, mutationGroupSort);
 
   const arrayIDAnnXTop = [
       '1bp Deletion',
@@ -2531,8 +2617,8 @@ function ID83(apiData, title = '') {
     ],
     arrayIDAnnXLabel = [5, 18.5, 35, 60, 76];
 
-  const totalMutations = getTotalMutations(apiData);
-  const maxMutation = getMaxMutations(apiData);
+  const totalMutations = getTotalMutations$1(apiData);
+  const maxMutation = getMaxMutations$1(apiData);
 
   const indelNames = data
     .map((group) =>
@@ -3544,6 +3630,1887 @@ function RS32(apiData, title = '') {
   };
 
   return { traces, layout };
+}
+
+function groupDataByMutation(
+  data,
+  groupRegex,
+  mutationGroupSort = false,
+  mutationTypeSort = false
+) {
+  const groupByMutation = data.reduce((acc, e) => {
+    const mutation = e.mutationType.match(groupRegex)[1];
+    acc[mutation] = acc[mutation] ? [...acc[mutation], e] : [e];
+    return acc;
+  }, {});
+
+  const groupedData = Object.entries(groupByMutation).map(
+    ([mutation, data]) => ({
+      mutation,
+      data: mutationTypeSort ? data.sort(mutationTypeSort) : data,
+    })
+  );
+
+  return mutationGroupSort ? groupedData.sort(mutationGroupSort) : groupedData;
+}
+
+function getTotalMutations(data) {
+  return data.reduce(
+    (total, e) => total + (e.mutations || e.contribution || 0),
+    0
+  );
+}
+
+function getMaxMutations(data) {
+  return Math.max(...data.map((e) => e.mutations || e.contribution || 0));
+}
+
+function findMaxAbsoluteYValue(data) {
+  let maxAbsoluteY = -Infinity;
+  for (let i = 0; i < data.length; i++) {
+    const obj = data[i];
+    const maxAbsoluteYObj = Math.max(...obj.y.map(Math.abs));
+    if (maxAbsoluteYObj > maxAbsoluteY) {
+      maxAbsoluteY = maxAbsoluteYObj;
+    }
+  }
+  return maxAbsoluteY;
+}
+
+function getRss(sampleDifferenceData) {
+  const squareDiff = sampleDifferenceData.map((e) => Math.pow(e || 0, 2));
+  return squareDiff.reduce((a, b, i) => a + b, 0).toExponential(3);
+}
+
+function getCosineSimilarity(data1, data2) {
+  function dotp(x, y) {
+    function dotp_sum(a, b) {
+      return a + b;
+    }
+    function dotp_times(a, i) {
+      return x[i] * y[i];
+    }
+    return x.map(dotp_times).reduce(dotp_sum, 0);
+  }
+
+  function cosineSimilarity(A, B) {
+    var similarity =
+      dotp(A, B) / (Math.sqrt(dotp(A, A)) * Math.sqrt(dotp(B, B)));
+    return similarity;
+  }
+  return cosineSimilarity(
+    data1.map((e) => e || 0),
+    data2.map((e) => e || 0)
+  ).toFixed(3);
+}
+
+function compareProfiles(
+  data1,
+  data2,
+  colors,
+  mutationRegex,
+  formatMutationLabels,
+  formatTickLabels,
+  tickAngle = -90
+) {
+  const sample1 = data1[0].sample || data1[0].signatureName;
+  const sample2 =
+    data2[0].scalarSignature || data2[0].sample || data2[0].signatureName;
+  // console.log(sample1);
+  // console.log(sample2);
+  const mutationGroupSort = (a, b) => {
+    const order = Object.keys(colors);
+    return order.indexOf(a.mutation) - order.indexOf(b.mutation);
+  };
+
+  // console.log(data1);
+  // console.log(data2);
+  // get total mutations per sample
+  const totalMutations1 = getTotalMutations(data1);
+  const totalMutations2 = getTotalMutations(data2);
+  // console.log(totalMutations1);
+  // console.log(totalMutations2);
+
+  // get max mutations per sample
+  const maxMutation1 = getMaxMutations(data1) / totalMutations1;
+  const maxMutation2 = getMaxMutations(data2) / totalMutations2;
+  const maxMutations = Math.max(maxMutation1, maxMutation2);
+
+  // normalize mutations per sample
+  const normalizedSample1 = data1.map((e) => ({
+    ...e,
+    ...(e.mutations >= 0 && {
+      mutations: e.mutations / totalMutations1,
+    }),
+    ...(e.contribution >= 0 && {
+      contribution: e.contribution / totalMutations1,
+    }),
+  }));
+  const normalizedSample2 = data2.map((e) => ({
+    ...e,
+    ...(e.mutations >= 0 && {
+      mutations: e.mutations / totalMutations2,
+    }),
+    ...(e.contribution >= 0 && {
+      contribution: e.contribution / totalMutations2,
+    }),
+  }));
+  // console.log(normalizedSample1);
+  const groupSamples1 = groupDataByMutation(
+    normalizedSample1,
+    mutationRegex,
+    mutationGroupSort
+  );
+
+  const groupSamples2 = groupDataByMutation(
+    normalizedSample2,
+    mutationRegex,
+    mutationGroupSort
+  );
+
+  // console.log(groupSamples1);
+  // console.log(groupSamples2);
+
+  const sampleTrace1 = groupSamples1.map((group, groupIndex, array) => ({
+    name: group.mutation,
+    type: 'bar',
+    marker: { color: colors[group.mutation] },
+    x: [...group.data.keys()].map(
+      (e) =>
+        e +
+        array
+          .slice(0, groupIndex)
+          .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+    ),
+    y: group.data.map((e) => e.mutations || e.contribution || 0),
+    hoverinfo: 'x+y',
+    showlegend: false,
+    yaxis: 'y3',
+  }));
+  // console.log(sampleTrace1);
+  const sampleTrace2 = groupSamples2.map((group, groupIndex, array) => ({
+    name: group.mutation,
+    type: 'bar',
+    marker: { color: colors[group.mutation] },
+    x: [...group.data.keys()].map(
+      (e) =>
+        e +
+        array
+          .slice(0, groupIndex)
+          .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+    ),
+    y: group.data.map((e) => e.mutations || e.contribution || 0),
+    hoverinfo: 'x+y',
+    showlegend: false,
+    yaxis: 'y2',
+  }));
+
+  const differenceTrace = sampleTrace1.map((trace, traceIndex) => ({
+    ...trace,
+    y: trace.y.map((e, i) => e - sampleTrace2[traceIndex].y[i]),
+    yaxis: 'y',
+  }));
+  findMaxAbsoluteYValue(differenceTrace);
+  const traces = [...differenceTrace, ...sampleTrace2, ...sampleTrace1];
+
+  const sampleDifferenceData = differenceTrace.reduce(
+    (array, trace) => [...array, ...trace.y],
+    []
+  );
+  const sample1Data = sampleTrace1.reduce(
+    (array, trace) => [...array, ...trace.y],
+    []
+  );
+  const sample2Data = sampleTrace2.reduce(
+    (array, trace) => [...array, ...trace.y],
+    []
+  );
+  const rss = getRss(sampleDifferenceData);
+  const cosineSimilarity = getCosineSimilarity(sample1Data, sample2Data);
+
+  const tickLabels = formatTickLabels(groupSamples1);
+
+  const mutationLabelBox = groupSamples1.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 1.0,
+    y1: 1.05,
+    fillcolor: colors[group.mutation],
+    line: {
+      width: 1,
+    },
+  }));
+  const sampleBorder1 = groupSamples1.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 0.67,
+    y1: 1,
+
+    line: {
+      width: 1,
+    },
+  }));
+
+  const sampleBorder2 = groupSamples2.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 0.34,
+    y1: 0.66,
+
+    line: {
+      width: 1,
+    },
+  }));
+
+  const differenceBorder = groupSamples2.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 0.33,
+    y1: 0,
+
+    line: {
+      width: 1,
+    },
+  }));
+
+  const sampleLabel1 = {
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'center',
+    yanchor: 'middle',
+    align: 'center',
+    x: 1.017,
+    y: 0.835,
+    text: sample1.length > 16 ? sample1.substring(0, 16) + '...' : sample1,
+    textangle: 90,
+    showarrow: false,
+    width: 100,
+  };
+
+  const sampleLabel2 = {
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'center',
+    yanchor: 'middle',
+    align: 'center',
+    x: 1.017,
+    y: 0.505,
+    // text: sample2.length > 16 ? sample2.substring(0, 16) + '...' : sample2,
+    text: sample2.indexOf(';') > 1 ? 'Reconstructed' : sample2,
+    textangle: 90,
+    showarrow: false,
+  };
+
+  const differenceLabel = {
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'center',
+    yanchor: 'middle',
+    align: 'center',
+    x: 1.017,
+    y: 0.165,
+    text: 'Difference',
+    textangle: 90,
+    showarrow: false,
+    height: 15,
+    valign: 'top',
+  };
+
+  const mutationAnnotation = groupSamples1.map((group, groupIndex, array) => ({
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x:
+      array
+        .slice(0, groupIndex)
+        .reduce((lastIndex, b) => lastIndex + b.data.length, 0) +
+      (group.data.length - 1) * 0.5,
+    y: 1.005,
+    text: formatMutationLabels(group),
+    showarrow: false,
+    font: { color: 'white' },
+    align: 'center',
+  }));
+
+  const layout = {
+    height: 700,
+    hoverlabel: { bgcolor: '#FFF' },
+    autosize: true,
+
+    title:
+      '<b>RSS = ' + rss + '; Cosine Similarity = ' + cosineSimilarity + '</b>',
+    xaxis: {
+      showline: true,
+      tickangle: tickAngle,
+      tickfont: { family: 'Courier New, monospace' },
+      tickmode: 'array',
+      tickvals: tickLabels.map((_, i) => i),
+      ticktext: tickLabels.map((e) => e),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+      ticks: '',
+    },
+    yaxis: {
+      autorange: false,
+      range: [-1 * maxMutations * 1.2, maxMutations * 1.2],
+      // range:
+      //   maxMutation1 - maxMutation2 > 0
+      //     ? [
+      //         -1 * (maxMutation1 - maxMutation2) * 1.5,
+      //         (maxMutation1 - maxMutation2) * 1.5,
+      //       ]
+      //     : [
+      //         1 * (maxMutation1 - maxMutation2) * 1.5,
+      //         -1 * (maxMutation1 - maxMutation2) * 1.5,
+      //       ],
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      showgrid: true,
+      gridcolor: '#F5F5F5',
+      domain: [0, 0.33],
+    },
+    yaxis2: {
+      autorange: false,
+      range: [0, maxMutations * 1.2],
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [0.34, 0.66],
+      title: { text: '<b>Relative contribution</b>' },
+    },
+    yaxis3: {
+      autorange: false,
+      range: [0, maxMutations * 1.2],
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [0.67, 1],
+    },
+
+    shapes: [
+      ...mutationLabelBox,
+      // differencLabelBox1,
+      // sampleLabelBox2,
+      // differenceLabelBox,
+      ...sampleBorder1,
+      ...sampleBorder2,
+      ...differenceBorder,
+    ],
+    annotations: [
+      ...mutationAnnotation,
+      sampleLabel1,
+      sampleLabel2,
+      differenceLabel,
+      //yTitleAnnotation,
+    ],
+  };
+
+  return { traces, layout };
+}
+
+function arrayContainsTerms(arr, searchTerms) {
+  for (let i = 0; i < searchTerms.length; i++) {
+    if (arr.some((item) => item.includes(searchTerms[i]))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function groupBy$1(array, key) {
+  return array.reduce((result, currentItem) => {
+    const group = currentItem[key];
+    if (!result[group]) {
+      result[group] = [];
+    }
+    result[group].push(currentItem);
+    return result;
+  }, {});
+}
+
+function MsIndividualComparison(
+  data,
+  arg,
+  colors,
+  mutationRegex,
+  formatMutationLabels,
+  formatTickLabels,
+  tickAngle = -90
+) {
+  const exposureData = data[0].data;
+  const signatureData = data[1].data;
+  const segmatrixData = data[2].data;
+
+  const exposure_groupBySignature = groupBy$1(
+    exposureData.filter((o) => o['exposure'] > 0.01),
+    'signatureName'
+  );
+
+  const signatureNames = Object.keys(exposure_groupBySignature).map((e) => e);
+  // find the longest label to calculate extra height margin
+  const longest = signatureNames.reduce(
+    (a, e) => (a > e.length ? a : e.length),
+    0
+  );
+  const extraMargin = longest < 7 ? 200 : longest * 12.5;
+
+  const searchTerms = ['SBS'];
+  const containsTerm = arrayContainsTerms(signatureNames, searchTerms);
+  let signatureColors;
+  containsTerm
+    ? (signatureColors = colorPallet)
+    : (signatureColors = colorPallet1);
+  const exposureSum = Object.values(exposure_groupBySignature)
+    .flat()
+    .reduce((n, { exposure }) => n + exposure, 0);
+
+  const percentSignature = Object.values(exposure_groupBySignature).map(
+    (e) => ({
+      signatureName: e[0].signatureName,
+      exposure: e[0].exposure,
+      exposureSum: exposureSum,
+      percent: e[0].exposure / exposureSum,
+    })
+  );
+
+  const ptext = percentSignature
+    .map(
+      (signature) =>
+        `${(signature.percent * 100).toFixed(1)}%*${signature.signatureName} + `
+    )
+    .join('');
+
+  const signature_groupBySignature = groupBy$1(
+    signatureData.filter((e) => signatureNames.includes(e.signatureName)),
+    'signatureName'
+  );
+
+  const plotYrange2 =
+    signatureNames.length > 6
+      ? 0.68
+      : signatureNames.length === 6
+      ? 0.65
+      : signatureNames.length === 5
+      ? 0.6
+      : signatureNames.length === 4
+      ? 0.55
+      : signatureNames.length === 3
+      ? 0.5
+      : signatureNames.length === 2
+      ? 0.4
+      : signatureNames.length === 1
+      ? 0.2
+      : 0.1;
+  const plotYrange1 = 1 - plotYrange2 - 0.06;
+  const divide2 = plotYrange2 / signatureNames.length;
+  const divide1 = plotYrange1 / 3;
+
+  const signatureDataFiltergroupBymutationTypes = groupBy$1(
+    Object.values(signature_groupBySignature).flat(),
+    'mutationType'
+  );
+
+  const seqmatrix_groupByMutationType = groupBy$1(
+    segmatrixData.filter((e) =>
+      Object.keys(signatureDataFiltergroupBymutationTypes)
+        .map((m) => m)
+        .includes(e.mutationType)
+    ),
+    'mutationType'
+  );
+
+  const seqmatrixDataFilter = Object.values(
+    seqmatrix_groupByMutationType
+  ).flat(); //original data for the comparison
+
+  const mutationGroupSort = (a, b) => {
+    const order = Object.keys(colors);
+    return order.indexOf(a.mutation) - order.indexOf(b.mutation);
+  };
+
+  const totalMutationsOriginal = getTotalMutations(seqmatrixDataFilter);
+
+  const normalizedOriginal = seqmatrixDataFilter.map((e) => ({
+    ...e,
+    ...(e.mutations >= 0 && {
+      mutations: e.mutations / totalMutationsOriginal,
+    }),
+    ...(e.contribution >= 0 && {
+      contribution: e.contribution / totalMutationsOriginal,
+    }),
+  }));
+
+  const groupOriginal = groupDataByMutation(
+    normalizedOriginal,
+    mutationRegex,
+    mutationGroupSort
+  );
+
+  const arraySignatureData = Object.values(signature_groupBySignature).map(
+    (e) => e
+  );
+
+  // const arraySignatureDataFlat = arraySignatureData.flat();
+  // const destructedData = [];
+  // for (let i = 0; i < percentSignature.length; i++) {
+  //   for (let j = 0; j < arraySignatureDataFlat.length; j++) {
+  //     if (
+  //       arraySignatureDataFlat[j].signatureName ===
+  //       percentSignature[i].signatureName
+  //     ) {
+  //       let n = {
+  //         signatureName: arraySignatureDataFlat[j].signatureName,
+  //         mutationType: arraySignatureDataFlat[j].mutationType,
+  //         mutations:
+  //           arraySignatureDataFlat[j].contribution *
+  //           percentSignature[i].percent,
+  //       };
+  //       destructedData.push(n);
+  //     }
+  //   }
+  // }
+
+  const destructedData = arraySignatureData
+    .flat()
+    .filter((data) =>
+      percentSignature.some((p) => p.signatureName === data.signatureName)
+    )
+    .map((data) => ({
+      signatureName: data.signatureName,
+      mutationType: data.mutationType,
+      mutations:
+        data.contribution *
+        percentSignature.find((p) => p.signatureName === data.signatureName)
+          .percent,
+    }));
+
+  // const groupByMutationType_destructed = groupBy(
+  //   destructedData,
+  //   'mutationType'
+  // );
+  // let newDestructedData = [];
+  // const groupByMutationType_destructed_value = Object.values(
+  //   groupByMutationType_destructed
+  // );
+  // for (let i = 0; i < groupByMutationType_destructed_value.length; i++) {
+  //   let n = {
+  //     mutations: getTotalMutations(groupByMutationType_destructed_value[i]),
+  //     mutationType: groupByMutationType_destructed_value[i][0].mutationType,
+  //     signatureName: groupByMutationType_destructed_value[i][0].signatureName,
+  //   };
+  //   newDestructedData.push(n);
+  // }
+  const newDestructedData = Object.values(
+    destructedData.reduce((acc, curr) => {
+      const key = curr.mutationType;
+      if (!acc[key]) {
+        acc[key] = {
+          mutations: 0,
+          mutationType: curr.mutationType,
+          signatureName: curr.signatureName,
+        };
+      }
+      acc[key].mutations += curr.mutations;
+      return acc;
+    }, {})
+  );
+
+  const groupDestructed = groupDataByMutation(
+    newDestructedData,
+    mutationRegex,
+    mutationGroupSort
+  );
+
+  // get total mutations per sample
+  const totalMutations1 = getTotalMutations(normalizedOriginal);
+  const totalMutations2 = getTotalMutations(newDestructedData);
+
+  // get max mutations per sample
+  const maxMutation1 = getMaxMutations(normalizedOriginal) / totalMutations1;
+  const maxMutation2 = getMaxMutations(newDestructedData) / totalMutations2;
+  const maxMutations = Math.max(maxMutation1, maxMutation2);
+  // --- Top subplots : original, destructed, different
+  const sampleTraceOriginal = groupOriginal.map((group, groupIndex, array) => ({
+    name: group.mutation,
+    type: 'bar',
+    marker: { color: colors[group.mutation] },
+    x: [...group.data.keys()].map(
+      (e) =>
+        e +
+        array
+          .slice(0, groupIndex)
+          .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+    ),
+    y: group.data.map((e) => e.mutations || e.contribution || 0),
+    hoverinfo: 'x+y',
+    showlegend: false,
+    xaxis: 'x2',
+    yaxis: 'y12',
+  }));
+
+  console.log(sampleTraceOriginal);
+  const sampleTraceDestructed = groupDestructed.map(
+    (group, groupIndex, array) => ({
+      name: group.mutations,
+      type: 'bar',
+      marker: { color: colors[group.mutation] },
+      x: [...group.data.keys()].map(
+        (e) =>
+          e +
+          array
+            .slice(0, groupIndex)
+            .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+      ),
+      y: group.data.map((e) => e.mutations || e.contribution || 0),
+      hoverinfo: 'x+y',
+      showlegend: false,
+      xaxis: 'x2',
+      yaxis: 'y11',
+    })
+  );
+  console.log(sampleTraceDestructed);
+  const differenceTrace = sampleTraceOriginal.map((trace, traceIndex) => ({
+    ...trace,
+    y: trace.y.map((e, i) => e - sampleTraceDestructed[traceIndex].y[i]),
+    yaxis: 'y10',
+    axis: 'x2',
+  }));
+  const differenceTraceMaxYValue = findMaxAbsoluteYValue(differenceTrace);
+  const sample1Data = sampleTraceOriginal.reduce(
+    (array, trace) => [...array, ...trace.y],
+    []
+  );
+  const sample2Data = sampleTraceDestructed.reduce(
+    (array, trace) => [...array, ...trace.y],
+    []
+  );
+
+  const sampleDifferenceData = differenceTrace.reduce(
+    (array, trace) => [...array, ...trace.y],
+    []
+  );
+  const rss = getRss(sampleDifferenceData);
+  const cosineSimilarity = getCosineSimilarity(sample1Data, sample2Data);
+
+  //-------- under subplot -----------//
+
+  const contributionGroupSort = (a, b) => {
+    const order = Object.keys(colors);
+    return order.indexOf(a.contribution) - order.indexOf(b.contribution);
+  };
+
+  let groupSamples = [];
+  for (let i = 0; i < arraySignatureData.length; i++) {
+    groupSamples.push(
+      groupDataByMutation(
+        arraySignatureData[i],
+        mutationRegex,
+        contributionGroupSort
+      )
+    );
+  }
+  groupSamples.reverse(); //make the lower subplot has same order as in stage
+
+  const tracesArray = [];
+  const sampleLabels = [];
+  const sampleBorders = [];
+  for (let i = 0; i < groupSamples.length; i++) {
+    let l = {
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'middle',
+      align: 'center',
+      x: 1.017,
+      y: divide2 * i + divide2 / 2 - 0.02,
+
+      text: groupSamples[i][0].data[0].signatureName,
+      textangle: 90,
+      showarrow: false,
+      width: 100,
+    };
+
+    sampleLabels.push(l);
+    for (let j = 0; j < groupSamples[i].length; j++) {
+      let t = {
+        name: groupSamples[i][j].mutation,
+        type: 'bar',
+        marker: { color: colors[groupSamples[i][j].mutation] },
+        x: [...groupSamples[i][j].data.keys()].map(
+          (e) =>
+            e +
+            groupSamples[i]
+              .slice(0, j)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        ),
+        y: groupSamples[i][j].data.map(
+          (e) => e.mutations || e.contribution || 0
+        ),
+        hoverinfo: 'x+y',
+        showlegend: false,
+        yaxis: i > 0 ? 'y' + parseInt(Number(i) + Number(1)) : 'y',
+      };
+      tracesArray.push(t);
+
+      let s = {
+        type: 'rect',
+        xref: 'x',
+        yref: 'paper',
+        x0: groupSamples[i]
+          .slice(0, j)
+          .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+        x1: groupSamples[i]
+          .slice(0, j + 1)
+          .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+        y0: i === 0 ? 0 : divide2 * i - 0.01,
+        y1: divide2 * i + divide2 - 0.02,
+
+        line: {
+          width: 1,
+        },
+      };
+      sampleBorders.push(s);
+    }
+  }
+
+  const traces = [
+    ...tracesArray,
+    ...differenceTrace,
+    ...sampleTraceOriginal,
+    ...sampleTraceDestructed,
+  ];
+  // ----- Shapes -------//
+  const sampleBorder1 = groupOriginal.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 1 - divide1 - 0.01,
+    y1: 1,
+    line: {
+      width: 1,
+    },
+  }));
+
+  const sampleBorder2 = groupDestructed.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 1 - divide1 * 2 - 0.01,
+    y1: 1 - divide1 - 0.02,
+
+    line: {
+      width: 1,
+    },
+  }));
+
+  const differenceBorder = groupDestructed.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 1 - divide1 * 3 - 0.01,
+    y1: 1 - divide1 * 2 - 0.02,
+
+    line: {
+      width: 1,
+    },
+  }));
+
+  const mutationLabelBox0 = groupSamples[0].map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: plotYrange2 - 0.02,
+    y1: plotYrange2 + 0.005,
+    fillcolor: colors[group.mutation],
+    line: {
+      width: 1,
+    },
+  }));
+
+  const mutationLabelBox1 = groupOriginal.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 1.0,
+    y1: 1.025,
+    fillcolor: colors[group.mutation],
+    line: {
+      width: 1,
+    },
+  }));
+
+  const sortArr = percentSignature
+    .slice()
+    .sort((a, b) => b.percent - a.percent);
+  const percents = sortArr.map((obj) => obj.percent); // extract percent values
+  const scaledPercents = percents.map((p, i) =>
+    percents.slice(0, i + 1).reduce((acc, val) => acc + val)
+  ); // compute cumulative sum
+
+  const signaturePercentBox = scaledPercents.map((val, i, arr) => ({
+    type: 'rect',
+    xref: 'paper',
+    yref: 'paper',
+    y0: i === 0 ? 0 : arr[i - 1],
+    y1: val,
+    x0: -0.105,
+    x1: -0.08,
+    signatureName: sortArr[i] ? sortArr[i].signatureName : '',
+    fillcolor: containsTerm
+      ? signatureColors[
+          sortArr[i].signatureName.replace(/^\D*/, '').replace(')', '')
+        ]
+      : signatureColors[i],
+    line: {
+      width: 0,
+    },
+  }));
+
+  const signaturePercentLine = scaledPercents.map((val, i, arr) => ({
+    type: 'line',
+    xref: 'paper',
+    yref: 'paper',
+    y0: i === 0 ? val / 2 : (val - arr[i - 1]) / 2 + arr[i - 1],
+    y1: i === 0 ? val / 2 : (val - arr[i - 1]) / 2 + arr[i - 1],
+    x0: -0.105,
+    x1: -0.125,
+    signatureName: sortArr[i] ? sortArr[i].signatureName : '',
+
+    line: {
+      width: 1,
+      color: containsTerm
+        ? signatureColors[
+            sortArr[i].signatureName.replace(/^\D*/, '').replace(')', '')
+          ]
+        : signatureColors[i],
+    },
+  }));
+
+  //------ Annotations -------//
+  const topSubplotAnnotations = [
+    {
+      //Sample Original
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'middle',
+      align: 'center',
+      x: 1.017,
+      y: 1 - divide1 / 2,
+
+      text: 'Original',
+      textangle: 90,
+      showarrow: false,
+      width: 100,
+    },
+    {
+      //Sample Destructed
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'middle',
+      align: 'center',
+      x: 1.017,
+      y: 1 - divide1 * 1.5 - 0.015,
+      text: 'Deconstructed',
+      textangle: 90,
+      showarrow: false,
+    },
+    {
+      //Sample difference
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'middle',
+      align: 'center',
+      x: 1.017,
+      y: 1 - divide1 * 2.5 - 0.015,
+      text: 'Difference',
+      textangle: 90,
+      showarrow: false,
+      valign: 'top',
+    },
+  ];
+
+  const titleAnnotations = [
+    {
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'middle',
+      align: 'center',
+      x: -0.05,
+      y: 1 - divide1 * 1.5 - 0.015,
+      text: '<b>Relative contribution</b>',
+      font: { size: 16, family: 'Times New Roman' },
+      textangle: -90,
+      showarrow: false,
+    },
+    {
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'center',
+      yanchor: 'middle',
+      align: 'center',
+      x: -0.05,
+      y: plotYrange2 / 2,
+      text: '<b>Relative contribution</b>',
+      font: { size: 16, family: 'Times New Roman' },
+      textangle: -90,
+      showarrow: false,
+    },
+    {
+      xref: 'paper',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x: 0.5,
+      y: -0.07,
+      text: '<b>Original Profile = ' + ptext.slice(0, -2) + '</b>',
+      font: { size: 13 },
+      showarrow: false,
+      align: 'center',
+    },
+  ];
+  const mutationAnnotation0 = groupSamples[0].map(
+    (group, groupIndex, array) => ({
+      xref: 'x',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x:
+        array
+          .slice(0, groupIndex)
+          .reduce((lastIndex, b) => lastIndex + b.data.length, 0) +
+        (group.data.length - 1) * 0.5,
+      y: plotYrange2 - 0.0185,
+      text: formatMutationLabels(group),
+      showarrow: false,
+      font: { color: 'white', size: 13, family: 'Times New Roman' },
+      align: 'center',
+    })
+  );
+
+  const mutationAnnotation1 = groupOriginal.map((group, groupIndex, array) => ({
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x:
+      array
+        .slice(0, groupIndex)
+        .reduce((lastIndex, b) => lastIndex + b.data.length, 0) +
+      (group.data.length - 1) * 0.5,
+    y: 1.002,
+    text: formatMutationLabels(group),
+    showarrow: false,
+    font: { color: 'white', size: 13, family: 'Times New Roman' },
+    align: 'center',
+  }));
+
+  const signaturePercentAnnotation = scaledPercents.map((val, i, arr) => ({
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'center',
+    yanchor: 'middle',
+    val: val,
+    val1: arr[i - 1],
+    y: i === 0 ? val / 2 : (val - arr[i - 1]) / 2 + arr[i - 1],
+    x: longest < 7 ? -0.15 : -0.2,
+    signatureName: sortArr[i] ? sortArr[i].signatureName : '',
+    font: {
+      color: containsTerm
+        ? signatureColors[
+            sortArr[i].signatureName.replace(/^\D*/, '').replace(')', '')
+          ]
+        : signatureColors[i],
+    },
+    text: sortArr[i].signatureName,
+    showarrow: false,
+
+    align: 'center',
+  }));
+  const tickLabels = formatTickLabels(groupSamples[0]);
+
+  const layout = {
+    hoverlabel: { bgcolor: '#FFF' },
+    height: 1080,
+    autosize: true,
+    title: {
+      text:
+        '<b>Mutational Signature Association</b><br><b>RSS = ' +
+        rss +
+        '; Cosine Similarity = ' +
+        cosineSimilarity +
+        '</b>',
+      font: {
+        family: 'Times New Roman',
+        size: 20,
+      },
+    },
+
+    xaxis: {
+      showline: true,
+      tickangle: tickAngle,
+      tickfont: { family: 'Courier New, monospace' },
+      tickmode: 'array',
+      tickvals: tickLabels.map((_, i) => i),
+      ticktext: tickLabels.map((e) => e),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+      ticks: '',
+      anchor: 'y',
+    },
+    xaxis2: {
+      showline: true,
+      tickangle: tickAngle,
+      tickfont: { family: 'Courier New, monospace' },
+      tickmode: 'array',
+      tickvals: tickLabels.map((_, i) => i),
+      ticktext: tickLabels.map((e) => e),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+      ticks: '',
+      anchor: 'y10',
+    },
+    yaxis: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      showgrid: true,
+      gridcolor: '#F5F5F5',
+      domain: [0, divide2 - 0.02],
+      anchor: 'x',
+    },
+    yaxis2: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [divide2 * 1 - 0.01, divide2 * 1 + divide2 - 0.02],
+      anchor: 'x',
+    },
+    yaxis3: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [divide2 * 2 - 0.01, divide2 * 2 + divide2 - 0.02],
+      anchor: 'x',
+    },
+    yaxis4: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [divide2 * 3 - 0.01, divide2 * 3 + divide2 - 0.02],
+      anchor: 'x',
+    },
+    yaxis5: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [divide2 * 4 - 0.01, divide2 * 4 + divide2 - 0.02],
+      anchor: 'x',
+    },
+    yaxis6: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [divide2 * 5 - 0.01, divide2 * 5 + divide2 - 0.02],
+    },
+    yaxis7: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [divide2 * 6 - 0.01, divide2 * 6 + divide2 - 0.02],
+    },
+    yaxis8: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [divide2 * 8 - 0.01, divide2 * 8 + divide2 - 0.02],
+    },
+    yaxis10: {
+      autorange: false,
+
+      range: [
+        -1 * differenceTraceMaxYValue * 1.5,
+        differenceTraceMaxYValue * 1.5,
+      ],
+
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      showgrid: true,
+      gridcolor: '#F5F5F5',
+
+      domain: [1 - divide1 * 3 - 0.01, 1 - divide1 * 2 - 0.02],
+      anchor: 'x2',
+    },
+    yaxis11: {
+      autorange: false,
+      range: [0, maxMutations * 1.2],
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      //title: { text: '<b>Relative contribution</b>' },
+      domain: [1 - divide1 * 2 - 0.01, 1 - divide1 - 0.02],
+      anchor: 'x2',
+    },
+    yaxis12: {
+      autorange: false,
+      range: [0, maxMutations * 1.2],
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [1 - divide1 - 0.01, 1],
+      anchor: 'x2',
+    },
+    shapes: [
+      ...mutationLabelBox0,
+      ...mutationLabelBox1,
+      ...sampleBorders,
+      ...sampleBorder1,
+      ...sampleBorder2,
+      ...differenceBorder,
+      ...signaturePercentBox,
+      ...signaturePercentLine,
+    ],
+    annotations: [
+      ...mutationAnnotation0,
+      ...mutationAnnotation1,
+      ...sampleLabels,
+      ...topSubplotAnnotations,
+      ...titleAnnotations,
+      ...signaturePercentAnnotation,
+    ],
+
+    margin: {
+      l: extraMargin,
+      t: 150,
+    },
+  };
+
+  return { traces, layout };
+}
+
+function sbs96(data1, data2, tab) {
+  const colors = {
+    'C>A': '#03BCEE',
+    'C>G': 'black',
+    'C>T': '#E32926',
+    'T>A': '#CAC9C9',
+    'T>C': '#A1CE63',
+    'T>G': '#EBC6C4',
+  };
+
+  const mutationRegex = /\[(.*)\]/;
+  const mutationLabels = (e) => `<b>${e.mutation}</b>`;
+  const formatTickLabels = (mutationGroups) =>
+    mutationGroups
+      .map(({ mutation, data }) =>
+        data.map((e) => {
+          const color = colors[mutation];
+          const regex = /^(.)\[(.).{2}\](.)$/;
+          const match = e.mutationType.match(regex);
+
+          return `${match[1]}<span style="color:${color}"><b>${match[2]}</b></span>${match[3]}`;
+        })
+      )
+      .flat();
+  if (tab === 'msIndividual') {
+    return MsIndividualComparison(
+      data1,
+      data2,
+      colors,
+      mutationRegex,
+      mutationLabels,
+      formatTickLabels
+    );
+  } else {
+    return compareProfiles(
+      data1,
+      data2,
+      colors,
+      mutationRegex,
+      mutationLabels,
+      formatTickLabels
+    );
+  }
+}
+
+function sbs192(data1, data2) {
+  const colors = {
+    'C>A': '#03BCEE',
+    'C>G': 'black',
+    'C>T': '#E32926',
+    'T>A': '#CAC9C9',
+    'T>C': '#A1CE63',
+    'T>G': '#EBC6C4',
+  };
+
+  const mutationRegex = /\[(.*)\]/;
+  const mutationTypeSort = (a, b) => {
+    const mutationTypeRegex = /^\w\:(.*)/;
+    return a.mutationType
+      .match(mutationTypeRegex)[1]
+      .localeCompare(b.mutationType.match(mutationTypeRegex)[1]);
+  };
+  const formatMutationLabels = (e) => `<b>${e.mutation}</b>`;
+  const formatTickLabels = (mutationGroups) =>
+    mutationGroups
+      .map(({ mutation, data }) =>
+        data.map((e) => {
+          const color = colors[mutation];
+          const regex = /^\w\:(.)\[(.).{2}\](.)$/;
+          const match = e.mutationType.match(regex);
+          return `${match[1]}<span style="color:${color}"><b>${match[2]}</b></span>${match[3]}`;
+        })
+      )
+      .flat();
+
+  const sample1 = data1[0].sample || data1[0].signatureName;
+  const sample2 = data2[0].sample || data2[0].signatureName;
+
+  const mutationGroupSort = (a, b) => {
+    const order = Object.keys(colors);
+    return order.indexOf(a.mutation) - order.indexOf(b.mutation);
+  };
+
+  // get total mutations per sample
+  const totalMutations1 = getTotalMutations(data1);
+  const totalMutations2 = getTotalMutations(data2);
+
+  // get max mutations per sample
+  const maxMutation1 = getMaxMutations(data1) / totalMutations1;
+  const maxMutation2 = getMaxMutations(data2) / totalMutations2;
+  const maxMutations = Math.max(maxMutation1, maxMutation2);
+
+  // normalize mutations per sample
+  const normalizedSample1 = data1.map((e) => ({
+    ...e,
+    ...(e.mutations >= 0 && {
+      mutations: e.mutations / totalMutations1,
+    }),
+    ...(e.contribution >= 0 && {
+      contribution: e.contribution / totalMutations1,
+    }),
+  }));
+  const normalizedSample2 = data2.map((e) => ({
+    ...e,
+    ...(e.mutations >= 0 && {
+      mutations: e.mutations / totalMutations2,
+    }),
+    ...(e.contribution >= 0 && {
+      contribution: e.contribution / totalMutations2,
+    }),
+  }));
+
+  // separate transcribed and unstranscribed data
+  const transcribed1 = normalizedSample1.filter((e) =>
+    /^T:/.test(e.mutationType)
+  );
+  const untranscribed1 = normalizedSample1.filter((e) =>
+    /^U:/.test(e.mutationType)
+  );
+  const transcribed2 = normalizedSample2.filter((e) =>
+    /^T:/.test(e.mutationType)
+  );
+  const untranscribed2 = normalizedSample2.filter((e) =>
+    /^U:/.test(e.mutationType)
+  );
+
+  const transcribedGroups1 = groupDataByMutation(
+    transcribed1,
+    mutationRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+  const untranscribedGroups1 = groupDataByMutation(
+    untranscribed1,
+    mutationRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+  const transcribedGroups2 = groupDataByMutation(
+    transcribed2,
+    mutationRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+  const untranscribedGroups2 = groupDataByMutation(
+    untranscribed2,
+    mutationRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+
+  // calcualte difference between samples
+  const transcribedDifference = transcribed1.map((e, i) => ({
+    ...e,
+    ...(e.mutations >= 0 && {
+      mutations: e.mutations - transcribed2[i].mutations,
+    }),
+    ...(e.contribution >= 0 && {
+      contribution: e.contribution - transcribed2[i].contribution,
+    }),
+  }));
+  const untranscribedDifference = untranscribed1.map((e, i) => ({
+    ...e,
+    ...(e.mutations >= 0 && {
+      mutations: e.mutations - untranscribed2[i].mutations,
+    }),
+    ...(e.contribution >= 0 && {
+      contribution: e.contribution - untranscribed2[i].contribution,
+    }),
+  }));
+
+  const transcribedDifferenceGroup = groupDataByMutation(
+    transcribedDifference,
+    mutationRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+  const untranscribedDifferenceGroup = groupDataByMutation(
+    untranscribedDifference,
+    mutationRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+
+  const transcribedTrace1 = {
+    name: 'Transcribed Strand',
+    legendgroup: 'transcribed',
+    type: 'bar',
+    marker: { color: '#004765' },
+    x: transcribedGroups1
+      .map((group, i, array) =>
+        [...group.data.keys()].map(
+          (e) =>
+            e +
+            array
+              .slice(0, i)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        )
+      )
+      .flat(),
+    y: transcribedGroups1
+      .map((group, i) => group.data.map((e) => e.mutations || e.contribution))
+      .flat(),
+    hovertemplate: '<b>Transcribed Strand</b><br> %{x}, %{y} <extra></extra>',
+    showlegend: true,
+    yaxis: 'y3',
+  };
+  const untranscribedTrace1 = {
+    name: 'Untranscribed Strand',
+    legendgroup: 'untranscribed',
+    type: 'bar',
+    marker: { color: '#E32925' },
+    x: untranscribedGroups1
+      .map((group, i, array) =>
+        [...group.data.keys()].map(
+          (e) =>
+            e +
+            array
+              .slice(0, i)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        )
+      )
+      .flat(),
+    y: untranscribedGroups1
+      .map((group, i) => group.data.map((e) => e.mutations || e.contribution))
+      .flat(),
+    hovertemplate: '<b>Untranscribed Strand</b><br> %{x}, %{y} <extra></extra>',
+    showlegend: true,
+    yaxis: 'y3',
+  };
+
+  const transcribedTrace2 = {
+    name: 'Transcribed Strand',
+    legendgroup: 'transcribed',
+    type: 'bar',
+    marker: { color: '#004765' },
+    x: transcribedGroups2
+      .map((e, i, array) =>
+        [...e.data.keys()].map(
+          (e) =>
+            e +
+            array
+              .slice(0, i)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        )
+      )
+      .flat(),
+    y: transcribedGroups2
+      .map((group, i) => group.data.map((e) => e.mutations || e.contribution))
+      .flat(),
+    hovertemplate: '<b>Transcribed Strand</b><br> %{x}, %{y} <extra></extra>',
+    showlegend: false,
+    yaxis: 'y2',
+  };
+  const untranscribedTrace2 = {
+    name: 'Untranscribed Strand',
+    legendgroup: 'untranscribed',
+    type: 'bar',
+    marker: { color: '#E32925' },
+    x: untranscribedGroups2
+      .map((e, i, array) =>
+        [...e.data.keys()].map(
+          (e) =>
+            e +
+            array
+              .slice(0, i)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        )
+      )
+      .flat(),
+    y: untranscribedGroups2
+      .map((group, i) => group.data.map((e) => e.mutations || e.contribution))
+      .flat(),
+    hovertemplate: '<b>Untranscribed Strand</b><br> %{x}, %{y} <extra></extra>',
+    showlegend: false,
+    yaxis: 'y2',
+  };
+
+  const transcribedDiffernceTrace = {
+    name: 'Transcribed Strand',
+    legendgroup: 'transcribed',
+    type: 'bar',
+    marker: { color: '#004765' },
+    x: transcribedDifferenceGroup
+      .map((e, i, array) =>
+        [...e.data.keys()].map(
+          (e) =>
+            e +
+            array
+              .slice(0, i)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        )
+      )
+      .flat(),
+    y: transcribedDifferenceGroup
+      .map((group, i) => group.data.map((e) => e.mutations || e.contribution))
+      .flat(),
+    hovertemplate: '<b>Transcribed Strand</b><br> %{x}, %{y} <extra></extra>',
+    showlegend: false,
+  };
+  const untranscribedDifferenceTrace = {
+    name: 'Untranscribed Strand',
+    legendgroup: 'untranscribed',
+    type: 'bar',
+    marker: { color: '#E32925' },
+    x: untranscribedDifferenceGroup
+      .map((e, i, array) =>
+        [...e.data.keys()].map(
+          (e) =>
+            e +
+            array
+              .slice(0, i)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        )
+      )
+      .flat(),
+    y: untranscribedDifferenceGroup
+      .map((group, i) => group.data.map((e) => e.mutations || e.contribution))
+      .flat(),
+    hovertemplate: '<b>Untranscribed Strand</b><br> %{x}, %{y} <extra></extra>',
+    showlegend: false,
+  };
+  const traces = [
+    transcribedDiffernceTrace,
+    untranscribedDifferenceTrace,
+    transcribedTrace2,
+    untranscribedTrace2,
+    transcribedTrace1,
+    untranscribedTrace1,
+  ];
+
+  const rss = getRss([...transcribedDifference, ...untranscribedDifference]);
+  const cosineSimilarity = getCosineSimilarity(
+    normalizedSample1,
+    normalizedSample2
+  );
+
+  const tickLabels = formatTickLabels(transcribedGroups1);
+
+  const mutationLabelBox = transcribedGroups1.map(
+    (group, groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+      y0: 1.0,
+      y1: 1.05,
+      fillcolor: colors[group.mutation],
+      line: {
+        width: 1,
+      },
+    })
+  );
+  const sampleBorder1 = transcribedGroups1.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 0.67,
+    y1: 1,
+
+    line: {
+      width: 1,
+    },
+  }));
+
+  const sampleBorder2 = transcribedGroups2.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+    y0: 0.34,
+    y1: 0.66,
+
+    line: {
+      width: 1,
+    },
+  }));
+
+  const differenceBorder = transcribedDifferenceGroup.map(
+    (group, groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((lastIndex, e) => lastIndex + e.data.length, -0.5),
+      y0: 0.33,
+      y1: 0,
+
+      line: {
+        width: 1,
+      },
+    })
+  );
+  const differencLabelBox1 = {
+    type: 'rect',
+    xref: 'paper',
+    yref: 'paper',
+    x0: 1,
+    x1: 1.02,
+    y0: 0.67,
+    y1: 1,
+    fillcolor: '#F0F0F0',
+  };
+  const sampleLabelBox2 = {
+    type: 'rect',
+    xref: 'paper',
+    yref: 'paper',
+    x0: 1,
+    x1: 1.02,
+    y0: 0.34,
+    y1: 0.66,
+    fillcolor: '#F0F0F0',
+  };
+
+  const differenceLabelBox = {
+    type: 'rect',
+    xref: 'paper',
+    yref: 'paper',
+    x0: 1,
+    x1: 1.02,
+    y0: 0,
+    y1: 0.33,
+    fillcolor: '#F0F0F0',
+  };
+
+  const sampleLabel1 = {
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'middle',
+    yanchor: 'middle',
+    align: 'center',
+    x: 1.0175,
+    y: 0.835,
+    text: sample1.length > 16 ? sample1.substring(0, 16) + '...' : sample1,
+    textangle: 90,
+    showarrow: false,
+  };
+
+  const sampleLabel2 = {
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'middle',
+    yanchor: 'middle',
+    align: 'center',
+    x: 1.0175,
+    y: 0.505,
+    text: sample2.length > 16 ? sample2.substring(0, 16) + '...' : sample2,
+    textangle: 90,
+    showarrow: false,
+  };
+
+  const differenceLabel = {
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'middle',
+    yanchor: 'middle',
+    align: 'center',
+    x: 1.0175,
+    y: 0.165,
+    text: 'Difference',
+    textangle: 90,
+    showarrow: false,
+  };
+
+  const mutationAnnotation = transcribedGroups1.map(
+    (group, groupIndex, array) => ({
+      xref: 'x',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x:
+        array
+          .slice(0, groupIndex)
+          .reduce((lastIndex, b) => lastIndex + b.data.length, 0) +
+        (group.data.length - 1) * 0.5,
+      y: 1.005,
+      text: formatMutationLabels(group),
+      showarrow: false,
+      font: { color: 'white' },
+      align: 'center',
+    })
+  );
+
+  const yTitleAnnotation = {
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'middle',
+    yanchor: 'middle',
+    align: 'center',
+    x: -0.051,
+    y: 0.5,
+    text: '<b>Relative contribution</b>',
+    textangle: -90,
+    showarrow: false,
+  };
+
+  const layout = {
+    height: 700,
+    hoverlabel: { bgcolor: '#FFF' },
+    grid: {
+      rows: 3,
+      column: 1,
+    },
+    title:
+      '<b>RSS = ' + rss + '; Cosine Similarity = ' + cosineSimilarity + '</b>',
+    xaxis: {
+      showline: true,
+      tickangle: -90,
+      tickfont: { family: 'Courier New, monospace' },
+      tickmode: 'array',
+      tickvals: tickLabels.map((_, i) => i),
+      ticktext: tickLabels.map((e) => e),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+      ticks: '',
+    },
+    yaxis: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      showgrid: true,
+      gridcolor: '#F5F5F5',
+      domain: [0, 0.33],
+    },
+    yaxis2: {
+      autorange: false,
+      range: [0, maxMutations * 1.2],
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [0.34, 0.66],
+    },
+    yaxis3: {
+      autorange: false,
+      range: [0, maxMutations * 1.2],
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      tickfont: {
+        family: 'Arial',
+      },
+      domain: [0.67, 1],
+    },
+    shapes: [
+      ...mutationLabelBox,
+      differencLabelBox1,
+      sampleLabelBox2,
+      differenceLabelBox,
+      ...sampleBorder1,
+      ...sampleBorder2,
+      ...differenceBorder,
+    ],
+    annotations: [
+      ...mutationAnnotation,
+      sampleLabel1,
+      sampleLabel2,
+      differenceLabel,
+      yTitleAnnotation,
+    ],
+  };
+
+  return {
+    traces,
+    layout,
+  };
 }
 
 //#region Retrieving SSM Files from ICGC Data Portal and Converting to MAF File
@@ -5146,12 +7113,13 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       mutationType = mutationalSpectra[0][0].profile;
     }
 
+
     if (numberOfPatients == 0) {
       $(`#${divID}`).html(
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
     } else if (
-      numberOfPatients > 1 &&
+      numberOfPatients > 2 &&
       matrixSize == 96 &&
       mutationType == "SBS"
     ) {
@@ -5174,6 +7142,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
 
       Plotly.default.newPlot(divID, traces, layout);
     } else if (
+      numberOfPatients == 2 &&
+      matrixSize == 96 &&
+      mutationType == "SBS"
+    ) {
+      let traces = sbs96(mutationalSpectra[0], mutationalSpectra[1]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
       numberOfPatients == 1 &&
       matrixSize == 96 &&
       mutationType == "SBS"
@@ -5190,6 +7166,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else if (
+      numberOfPatients == 2 &&
+      matrixSize == 192 &&
+      mutationType == "SBS"
+    ) {
+      let traces = sbs192(mutationalSpectra[0], mutationalSpectra[1]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }else if (
       numberOfPatients == 1 &&
       matrixSize == 288 &&
       mutationType == "SBS"
@@ -5219,6 +7203,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       mutationType == "DBS"
     ) {
       let traces = DBS78(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 2 &&
+      matrixSize == 78 &&
+      mutationType == "DBS"
+    ) {
+      let traces = plotMutationalProfileDBS78Comparison(mutationalSpectra[0], mutationalSpectra[1]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else if (
@@ -5253,6 +7245,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       let traces = ID83(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
+    }else if (
+      numberOfPatients == 2 &&
+      matrixSize == 83 &&
+      mutationType == "ID"
+    ) {
+      let traces = plotMutationalProfileID83Comparison(mutationalSpectra[0], mutationalSpectra[1]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
     } else if (
       numberOfPatients == 1 &&
       matrixSize == 415 &&
@@ -5267,6 +7267,14 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       mutationType == "RS"
     ) {
       let traces = RS32(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    }else if (
+      numberOfPatients == 2 &&
+      matrixSize == 32 &&
+      mutationType == "RS"
+    ) {
+      let traces = plotMutationalProfileRS32Comparison(mutationalSpectra[0], mutationalSpectra[1]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
     } else {
