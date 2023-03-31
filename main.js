@@ -6,26 +6,26 @@ import * as am5hierarchy from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5/
 
 import * as am5themes_Animated from "https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.3.7/themes/Animated.js/+esm";
 
-import { default as plotMutationalProfileSBS96 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs96.js";
-import { default as plotMutationalProfileSBS192 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs192.js";
-import { default as plotMutationalProfileSBS288 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs288.js";
-import { default as plotMutationalProfileSBS384 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs384.js";
-import { default as plotMutationalProfileSBS1536 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/sbs1536.js";
+import { default as plotMutationalProfileSBS96 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/sbs96.js";
+import { default as plotMutationalProfileSBS192 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/sbs192.js";
+import { default as plotMutationalProfileSBS288 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/sbs288.js";
+import { default as plotMutationalProfileSBS384 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/sbs384.js";
+import { default as plotMutationalProfileSBS1536 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/sbs1536.js";
 
-import { default as plotMutationalProfileDBS78 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/dbs78.js";
-import { default as plotMutationalProfileDBS186 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/dbs186.js";
+import { default as plotMutationalProfileDBS78 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/dbs78.js";
+import { default as plotMutationalProfileDBS186 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/dbs186.js";
 
-import { default as plotMutationalProfileID28 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id28.js";
-import { default as plotMutationalProfileID29 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id29.js";
-import { default as plotMutationalProfileID83 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id83.js";
-import { default as plotMutationalProfileID415 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id415.js";
-import { default as plotMutationalProfileRS32 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/rs32.js";
+import { default as plotMutationalProfileID28 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/id28.js";
+import { default as plotMutationalProfileID29 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/id29.js";
+import { default as plotMutationalProfileID83 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/id83.js";
+import { default as plotMutationalProfileID415 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/id415.js";
+import { default as plotMutationalProfileRS32 } from "./mSigPortalScripts/client/src/components/controls/plotly/mutationalProfiles/rs32.js";
 
-import {default as plotMutationalProfileSBS96Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/sbs96.js";
-import {default as plotMutationalProfileSBS192Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/sbs192.js";
-import {default as plotMutationalProfileDBS78Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/dbs78.js";
-import {default as plotMutationalProfileID83Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/id83.js";
-import {default as plotMutationalProfileRS32Comparison} from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/profileComparison/rs32.js";
+import {default as plotMutationalProfileSBS96Comparison} from "./mSigPortalScripts/client/src/components/controls/plotly/profileComparison/sbs96.js";
+import {default as plotMutationalProfileSBS192Comparison} from "./mSigPortalScripts/client/src/components/controls/plotly/profileComparison/sbs192.js";
+import {default as plotMutationalProfileDBS78Comparison} from "./mSigPortalScripts/client/src/components/controls/plotly/profileComparison/dbs78.js";
+import {default as plotMutationalProfileID83Comparison} from "./mSigPortalScripts/client/src/components/controls/plotly/profileComparison/id83.js";
+import {default as plotMutationalProfileRS32Comparison} from "./mSigPortalScripts/client/src/components/controls/plotly/profileComparison/rs32.js";
 
 
 
