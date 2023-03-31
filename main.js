@@ -21,7 +21,6 @@ import { default as plotMutationalProfileID83 } from "./nci-webtools-dceg-mSigPo
 import { default as plotMutationalProfileID415 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/id415.js";
 import { default as plotMutationalProfileRS32 } from "./nci-webtools-dceg-mSigPortal/client/src/components/controls/plotly/mutationalProfiles/rs32.js";
 
-
 import {
   obtainICGCDataMAF,
   convertMatrix,
@@ -640,10 +639,10 @@ Renders a plot of the mutational spectra for one or more patients in a given div
     divID = "mutationalSpectrumMatrix"
   ) {
     matrixSize = mutationalSpectra[0].length;
-    
+
     const numberOfPatients = Object.keys(mutationalSpectra).length;
 
-    if (numberOfPatients == 1){
+    if (numberOfPatients == 1) {
       mutationType = mutationalSpectra[0][0].profile;
     }
 
@@ -651,7 +650,11 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       $(`#${divID}`).html(
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
-    } else if (numberOfPatients > 1 && matrixSize == 96 && mutationType == "SBS") {
+    } else if (
+      numberOfPatients > 1 &&
+      matrixSize == 96 &&
+      mutationType == "SBS"
+    ) {
       const layout = {
         title: `Mutational Spectra for ${Object.keys(mutationalSpectra).join(
           ", "
@@ -669,56 +672,103 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       }));
 
       Plotly.default.newPlot(divID, traces, layout);
-    } else if (numberOfPatients == 1 && matrixSize == 96 && mutationType == "SBS") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 96 &&
+      mutationType == "SBS"
+    ) {
       let traces = plotMutationalProfileSBS96(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    } else if (numberOfPatients == 1 && matrixSize == 192 && mutationType == "SBS") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 192 &&
+      mutationType == "SBS"
+    ) {
       let traces = plotMutationalProfileSBS192(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    }  else if (numberOfPatients == 1 && matrixSize == 288 && mutationType == "SBS") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 288 &&
+      mutationType == "SBS"
+    ) {
       let traces = plotMutationalProfileSBS288(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    } else if (numberOfPatients == 1 && matrixSize == 384 && mutationType == "SBS") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 384 &&
+      mutationType == "SBS"
+    ) {
       let traces = plotMutationalProfileSBS384(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    }  else if (numberOfPatients == 1 && matrixSize == 1536 && mutationType == "SBS") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 1536 &&
+      mutationType == "SBS"
+    ) {
       let traces = plotMutationalProfileSBS1536(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    }   else if (numberOfPatients == 1 && matrixSize == 78 && mutationType == "DBS") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 78 &&
+      mutationType == "DBS"
+    ) {
       let traces = plotMutationalProfileDBS78(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    } else if (numberOfPatients == 1 && matrixSize == 186 && mutationType == "DBS") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 186 &&
+      mutationType == "DBS"
+    ) {
       let traces = plotMutationalProfileDBS186(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    }  else if (numberOfPatients == 1 && matrixSize == 28 && mutationType == "ID") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 28 &&
+      mutationType == "ID"
+    ) {
       let traces = plotMutationalProfileID28(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    }  else if (numberOfPatients == 1 && matrixSize == 29 && mutationType == "ID") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 29 &&
+      mutationType == "ID"
+    ) {
       let traces = plotMutationalProfileID29(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    }  else if (numberOfPatients == 1 && matrixSize == 83 && mutationType == "ID") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 83 &&
+      mutationType == "ID"
+    ) {
       let traces = plotMutationalProfileID83(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    }  else if (numberOfPatients == 1 && matrixSize == 415 && mutationType == "ID") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 415 &&
+      mutationType == "ID"
+    ) {
       let traces = plotMutationalProfileID415(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    } else if (numberOfPatients == 1 && matrixSize == 32 && mutationType == "RS") {
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 32 &&
+      mutationType == "RS"
+    ) {
       let traces = plotMutationalProfileRS32(mutationalSpectra[0]);
       Plotly.default.newPlot(divID, traces.traces, traces.layout);
       return traces;
-    } 
-    else {
+    } else {
       let traces = [];
 
       const layout = {

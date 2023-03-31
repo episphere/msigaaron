@@ -105,6 +105,45 @@ function createMutationAnnotations(data, appendedText = '') {
   }));
 }
 
+const rs32Color = {
+  'clustered_del_>10Mb': 'deeppink',
+  'non-clustered_del_>10Mb': 'deeppink',
+  'clustered_del_1Mb-10Mb': 'hotpink',
+  'non-clustered_del_1Mb-10Mb': 'hotpink',
+  'clustered_del_10-100Kb': 'lightpink',
+  'non-clustered_del_10-100Kb': 'lightpink',
+  'clustered_del_100Kb-1Mb': 'palevioletred',
+  'non-clustered_del_100Kb-1Mb': 'palevioletred',
+  'clustered_del_1-10Kb': 'lavenderblush',
+  'non-clustered_del_1-10Kb': 'lavenderblush',
+  'clustered_tds_>10Mb': 'saddlebrown',
+  'non-clustered_tds_>10Mb': 'saddlebrown',
+  'clustered_tds_1Mb-10Mb': 'sienna',
+  'non-clustered_tds_1Mb-10Mb': 'sienna',
+  'clustered_tds_10-100Kb': 'sandybrown',
+  'non-clustered_tds_10-100Kb': 'sandybrown',
+  'clustered_tds_100Kb-1Mb': 'peru',
+  'non-clustered_tds_100Kb-1Mb': 'peru',
+  'clustered_tds_1-10Kb': 'linen',
+  'non-clustered_tds_1-10Kb': 'linen',
+  'clustered_inv_>10Mb': 'rebeccapurple',
+  'non-clustered_inv_>10Mb': 'rebeccapurple',
+  'clustered_inv_1Mb-10Mb': 'blueviolet',
+  'non-clustered_inv_1Mb-10Mb': 'blueviolet',
+  'clustered_inv_10-100Kb': 'plum',
+  'non-clustered_inv_10-100Kb': 'plum',
+  'clustered_inv_100Kb-1Mb': 'mediumorchid',
+  'non-clustered_inv_100Kb-1Mb': 'mediumorchid',
+  'clustered_inv_1-10Kb': 'thistle',
+  'non-clustered_inv_1-10Kb': 'thistle',
+  clustered_trans: 'gray',
+  'non-clustered_trans': 'gray',
+  del: '#800001',
+  tds: '#FF8C00',
+  inv: '#6A5ACD',
+  tra: '#696969',
+};
+
 const sbsColor = {
   'C>A': '#03BCEE',
   'C>G': 'black',
@@ -112,6 +151,38 @@ const sbsColor = {
   'T>A': '#CAC9C9',
   'T>C': '#A1CE63',
   'T>G': '#EBC6C4',
+};
+
+const id83Color = {
+  '1:Del:C': { shape: '#FBBD6F', text: 'black' },
+  '1:Del:T': { shape: '#FE8002', text: 'white' },
+  '1:Ins:C': { shape: '#AEDD8A', text: 'black' },
+  '1:Ins:T': { shape: '#35A12E', text: 'white' },
+  '2:Del:R': { shape: '#FCC9B4', text: 'black' },
+  '3:Del:R': { shape: '#FB8969', text: 'black' },
+  '4:Del:R': { shape: '#F04432', text: 'black' },
+  '5:Del:R': { shape: '#BB1A1A', text: 'white' },
+  '2:Ins:R': { shape: '#CFDFF0', text: 'black' },
+  '3:Ins:R': { shape: '#93C3DE', text: 'black' },
+  '4:Ins:R': { shape: '#4B97C7', text: 'black' },
+  '5:Ins:R': { shape: '#1863AA', text: 'white' },
+  '2:Del:M': { shape: '#E1E1EE', text: 'blacl' },
+  '3:Del:M': { shape: '#B5B5D6', text: 'black' },
+  '4:Del:M': { shape: '#8482BC', text: 'black' },
+  '5:Del:M': { shape: '#62409A', text: 'white' },
+};
+
+const dbs78Color = {
+  AC: '#09BCED',
+  AT: '#0266CA',
+  CC: '#9FCE62',
+  CG: '#006501',
+  CT: '#FF9898',
+  GC: '#E22925',
+  TA: '#FEB065',
+  TC: '#FD8000',
+  TG: '#CB98FD',
+  TT: '#4C0299',
 };
 
 function SBS96(apiData, title = '') {
@@ -209,6 +280,3267 @@ function SBS96(apiData, title = '') {
 
     shapes: mutationShapes,
     annotations: [...mutationAnnotation, sampleAnnotation],
+  };
+
+  return { traces, layout };
+}
+
+function SBS192(apiData, title = '') {
+  const colors = sbsColor;
+  const mutationRegex = /\[(.*)\]/;
+  const mutationTypeSort = (a, b) => {
+    const mutationTypeRegex = /^\w\:(.*)/;
+    return a.mutationType
+      .match(mutationTypeRegex)[1]
+      .localeCompare(b.mutationType.match(mutationTypeRegex)[1]);
+  };
+  const mutationGroupSort = (a, b) => {
+    const order = Object.keys(colors);
+    return order.indexOf(a.mutation) - order.indexOf(b.mutation);
+  };
+
+  const transcribed = apiData.filter((e) => /^T:/.test(e.mutationType));
+  const untranscribed = apiData.filter((e) => /^U:/.test(e.mutationType));
+
+  const transcribedGroups = groupDataByMutation(
+    transcribed,
+    mutationRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+  const untranscribedGroups = groupDataByMutation(
+    untranscribed,
+    mutationRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+  const maxMutation = getMaxMutations(apiData);
+
+  const transcribedTraces = {
+    name: 'Transcribed Strand',
+    type: 'bar',
+    marker: { color: '#004765' },
+    x: transcribedGroups
+      .map((group, i, array) =>
+        [...group.data.keys()].map(
+          (e) =>
+            e +
+            array
+              .slice(0, i)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        )
+      )
+      .flat(),
+    y: transcribedGroups
+      .map((group, i) => group.data.map((e) => e.mutations || e.contribution))
+      .flat(),
+    hovertemplate: '<b>Transcribed Strand</b><br> %{x}, %{y} <extra></extra>',
+    showlegend: true,
+  };
+  const untranscribedTraces = {
+    name: 'Untranscribed Strand',
+    type: 'bar',
+    marker: { color: '#E32925' },
+    x: untranscribedGroups
+      .map((e, i, array) =>
+        [...e.data.keys()].map(
+          (e) =>
+            e +
+            array
+              .slice(0, i)
+              .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+        )
+      )
+      .flat(),
+    y: untranscribedGroups
+      .map((group, i) => group.data.map((e) => e.mutations || e.contribution))
+      .flat(),
+    hovertemplate: '<b>Untranscribed Strand</b><br> %{x}, %{y} <extra></extra>',
+    showlegend: true,
+  };
+
+  const sampleAnnotation = createSampleAnnotation(
+    apiData,
+    'Transcribed Substitutions'
+  );
+  const mutationAnnotation = createMutationAnnotations(transcribedGroups);
+  const mutationShapes = createMutationShapes(transcribedGroups, colors);
+  const backgroundShapes = mutationShapes.map((e) => ({
+    ...e,
+    y0: 1,
+    y1: 0,
+    opacity: 0.15,
+  }));
+
+  const traces = [transcribedTraces, untranscribedTraces];
+
+  function formatTickLabel(mutation, mutationType) {
+    const color = colors[mutation];
+    const regex = /^\w\:(.)\[(.).{2}\](.)$/;
+    const match = mutationType.match(regex);
+    return `${match[1]}<span style="color:${color}"><b>${match[2]}</b></span>${match[3]}`;
+  }
+
+  const mutationTypeNames = transcribedGroups
+    .map((group) =>
+      group.data.map((e) => ({
+        mutation: group.mutation,
+        mutationType: e.mutationType,
+      }))
+    )
+    .flat();
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    showlegend: true,
+    height: 450,
+    autosize: true,
+    legend: {
+      x: 1,
+      xanchor: 'right',
+      y: 1,
+      bgcolor: '#FFFFFF',
+      bordercolor: '#E1E1E1',
+      borderwidth: 1,
+    },
+    xaxis: {
+      showticklabels: true,
+      showline: true,
+      tickangle: -90,
+      tickfont: {
+        family: 'Courier New, monospace',
+        color: '#A0A0A0',
+      },
+      tickmode: 'array',
+      tickvals: mutationTypeNames.map((_, i) => i),
+      ticktext: mutationTypeNames.map((e) =>
+        formatTickLabel(e.mutation, e.mutationType)
+      ),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+    },
+    yaxis: {
+      title: {
+        text: apiData[0].mutations
+          ? '<b>Number of Double Base Substitutions</b>'
+          : '<b>Percentage of Double Base Substitutions</b>',
+        font: {
+          family: 'Times New Roman',
+        },
+      },
+      autorange: false,
+      range: [0, maxMutation * 1.2],
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+      tickformat: Number.isInteger(traces[0].y[0]) ? '~s' : '.1%',
+    },
+
+    shapes: [...mutationShapes, ...backgroundShapes],
+    annotations: [...mutationAnnotation, sampleAnnotation],
+  };
+
+  return { traces, layout };
+}
+
+function SBS288(data, title = '') {
+  const colors = {
+    'C>A': '#03BCEE',
+    'C>G': 'black',
+    'C>T': '#E32926',
+    'T>A': '#CAC9C9',
+    'T>C': '#A1CE63',
+    'T>G': '#EBC6C4',
+  };
+
+  const transcribed = data.filter((e) => /^T:/.test(e.mutationType));
+  const untranscribed = data.filter((e) => /^U:/.test(e.mutationType));
+  const neutral = data.filter((e) => /^N:/.test(e.mutationType));
+
+  // const totalMutations =
+  //   transcribed.reduce((total, e) => total + e.mutations, 0) +
+  //   untranscribed.reduce((total, e) => total + e.mutations, 0) +
+  //   neutral.reduce((total, e) => total + e.mutations, 0);
+  const totalMutations = getTotalMutations(data);
+
+  Math.max(
+    ...[
+      ...transcribed.map((e) => e.mutations),
+      ...untranscribed.map((e) => e.mutations),
+    ]
+  );
+
+  //// ------ bar char left  --------- //
+
+  const groupByMutationWoFirstLetter = data.reduce((groups, e, i) => {
+    const mutation = e.mutationType.substring(2, e.mutationType.length);
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const totalMutationsGroup = Object.entries(groupByMutationWoFirstLetter).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      mutationType: mutation,
+      signatures: signatures,
+      total: signatures.reduce((a, e) => a + e.contribution, 0),
+    })
+  );
+
+  const groupByTotal = totalMutationsGroup.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.total,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const flatSortedTotal = Object.values(groupByTotal).flat();
+  const maxValTotal = Math.max(...flatSortedTotal.map((o) => o.contribution));
+
+  const tracesBarTotal = Object.entries(groupByTotal).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      name: mutation,
+      type: 'bar',
+      marker: { color: colors[mutation] },
+      //   x: signatures.map((e) => e.mutationType),
+      //x: signatures.map((e, i) => groupIndex * signatures.length + i),
+      x: signatures.map(
+        (e, i) =>
+          array
+            .slice(0, groupIndex)
+            .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+      ),
+      y: signatures.map((e) => e.contribution),
+      hoverinfo: 'x+y',
+      showlegend: false,
+    })
+  );
+
+  //////------------- bar chart right ---------------//////
+
+  const groupByMutationT = transcribed.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType.substring(2, e.mutationType.length),
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+
+    return groups;
+  }, {});
+
+  const totalMutationsGroupT = Object.entries(groupByMutationT).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      mutationType: mutation,
+      signatures: signatures,
+      total: signatures.reduce((a, e) => a + e.contribution, 0),
+    })
+  );
+
+  const groupByMutationU = untranscribed.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType.substring(2, e.mutationType.length),
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const totalMutationsGroupU = Object.entries(groupByMutationU).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      mutationType: mutation,
+      signatures: signatures,
+      total: signatures.reduce((a, e) => a + e.contribution, 0),
+    })
+  );
+
+  const groupByMutationN = neutral.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType.substring(2, e.mutationType.length),
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const totalMutationsGroupN = Object.entries(groupByMutationN).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      mutationType: mutation,
+      signatures: signatures,
+      total: signatures.reduce((a, e) => a + e.contribution, 0),
+    })
+  );
+
+  const groupByFirstLetter = data.reduce((groups, e, i) => {
+    const mutation = e.mutationType.substring(0, 1);
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+
+    return groups;
+  }, {});
+
+  const totalGroupByFirstLetter = Object.entries(groupByFirstLetter).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      mutationType: mutation,
+      signatures: signatures,
+      total: signatures.reduce((a, e) => a + e.contribution, 0),
+    })
+  );
+
+  const flatSortedT = Object.values(totalMutationsGroupT).flat();
+  const flatSortedU = Object.values(totalMutationsGroupU).flat();
+  const flatSortedN = Object.values(totalMutationsGroupN).flat();
+  const flatSortedFirstLetter = Object.values(totalGroupByFirstLetter).flat();
+
+  const maxValByTotal = Math.max(
+    ...[
+      ...flatSortedT.map((e) => e.total),
+      ...flatSortedU.map((e) => e.total),
+      ...flatSortedN.map((e) => e.total),
+      ...flatSortedFirstLetter.map((e) => e.total),
+    ]
+  );
+
+  Object.entries(flatSortedFirstLetter).forEach(
+    ([key, value], groupIndex, array) => {
+      if (value.mutationType === 'T') {
+        value.mutationType = 'All';
+        flatSortedT.push(value);
+      } else if (value.mutationType === 'U') {
+        value.mutationType = 'All';
+        flatSortedU.push(value);
+      } else {
+        value.mutationType = 'All';
+        flatSortedN.push(value);
+      }
+    }
+  );
+
+  const transcribedTraces = {
+    name: 'Transcrribed',
+    type: 'bar',
+    marker: { color: '#004765' },
+
+    x: flatSortedT.map((element, index, array) => element.total),
+    y: flatSortedT.map(
+      (element, index, array) => `<b>${element.mutationType}<b>`
+    ),
+    xaxis: 'x2',
+    yaxis: 'y2',
+    //hoverinfo: 'x2+y2',
+    hovertemplate: '<b>Transcrribed</b><br>%{y}, %{x} <extra></extra>',
+    showlegend: true,
+    orientation: 'h',
+  };
+
+  const untranscribedTraces = {
+    name: 'Untranscribed',
+    type: 'bar',
+    marker: { color: '#E32925' },
+    x: flatSortedU.map((element, index, array) => element.total),
+    y: flatSortedU.map(
+      (element, index, array) => `<b>${element.mutationType}<b>`
+    ),
+    xaxis: 'x2',
+    yaxis: 'y2',
+    //hoverinfo: 'x2+y2',
+    hovertemplate: '<b>Untranscribed</b><br>%{y}, %{x} <extra></extra>',
+    showlegend: true,
+    orientation: 'h',
+  };
+
+  const neutralTraces = {
+    name: 'Nontranscribed',
+    type: 'bar',
+    marker: { color: '#008001' },
+    x: flatSortedN.map((element, index, array) => element.total),
+    y: flatSortedN.map(
+      (element, index, array) => `<b>${element.mutationType}<b>`
+    ),
+    xaxis: 'x2',
+    yaxis: 'y2',
+    //hoverinfo: 'x2+y2',
+    hovertemplate: '<b>Nontranscribed</b><br>%{y}, %{x} <extra></extra>',
+    showlegend: true,
+    orientation: 'h',
+  };
+
+  const traces = [
+    ...tracesBarTotal,
+    neutralTraces,
+    untranscribedTraces,
+    transcribedTraces,
+  ];
+
+  const annotations = Object.entries(groupByTotal).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      xref: 'x',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x:
+        array
+          .slice(0, groupIndex)
+          .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) +
+        (signatures.length - 1) * 0.5,
+      y: 1.04,
+      text: `<b>${mutation}</b>`,
+      showarrow: false,
+      font: {
+        size: 18,
+      },
+      align: 'center',
+    })
+  );
+
+  const sampleAnnotation = createSampleAnnotation(data);
+
+  const transformU = Object.entries(groupByMutationU).map(
+    ([mutation, data]) => ({
+      mutation,
+      data,
+    })
+  );
+
+  const mutationTypeNames = transformU
+    .map((group) =>
+      group.data.map((e) => ({
+        mutation: group.mutation,
+        mutationType: e.mutationType,
+      }))
+    )
+    .flat();
+
+  function formatTickLabel(mutation, mutationType) {
+    const color = colors[mutation];
+    const regex = /^(.)\[(.).{2}\](.)$/;
+    const match = mutationType.match(regex);
+    return `${match[1]}<span style="color:${color}"><b>${match[2]}</b></span>${match[3]}`;
+  }
+
+  const shapes = Object.entries(groupByTotal).map(
+    ([mutation, _], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y0: 1.05,
+      y1: 1.01,
+      fillcolor: colors[mutation],
+      line: {
+        width: 0,
+      },
+      mutation: mutation,
+    })
+  );
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    bargap: 0.3,
+    height: 450,
+    //width:1080,
+    autosize: true,
+    legend: {
+      x: 1,
+      xanchor: 'right',
+      y: 0,
+      traceorder: 'reversed',
+      bgcolor: '#FFFFFF',
+      bordercolor: '#E1E1E1',
+      borderwidth: 1,
+    },
+    grid: {
+      rows: 1,
+      columns: 2,
+      pattern: 'independent',
+    },
+    xaxis: {
+      showticklabels: true,
+      showline: true,
+      tickangle: -90,
+      tickfont: {
+        family: 'Courier New, monospace',
+        color: '#A0A0A0',
+      },
+      tickmode: 'array',
+      tickvals: mutationTypeNames.map((_, i) => i),
+      ticktext: mutationTypeNames.map((e) =>
+        formatTickLabel(e.mutation, e.mutationType)
+      ),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+      domain: [0, 0.75],
+    },
+    yaxis: {
+      title: {
+        text:
+          totalMutations > 1.1
+            ? '<b>Number of Single Base Substitutions</b>'
+            : '<b>Percentage of Single Base Substitutions</b>',
+        font: {
+          family: 'Times New Roman',
+        },
+      },
+      autorange: false,
+      range: [0, maxValTotal + maxValTotal * 0.2],
+      tickcolor: '#D3D3D3',
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      tickformat: maxValTotal >= 1000 || totalMutations > 1.1 ? '~s' : '.1%',
+      ticks: 'inside',
+      showgrid: true,
+      gridcolor: '#F5F5F5',
+      mirror: 'all',
+    },
+
+    xaxis2: {
+      showticklabels: true,
+      showline: true,
+      tickfont: {
+        size: 12,
+      },
+      domain: [0.8, 1],
+      tickformat: maxValByTotal >= 1000 ? '~s' : '',
+      ticks: 'outside',
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      showgrid: false,
+    },
+    yaxis2: {
+      showline: true,
+      tickangle: 0,
+      tickfont: {
+        size: 12,
+      },
+      anchor: 'x2',
+      categoryorder: 'category descending',
+      tickformat: '~s',
+      ticks: 'outside',
+      linecolor: '#D3D3D3',
+      tickcolor: '#D3D3D3',
+      linewidth: 1,
+      showgrid: false,
+    },
+
+    shapes: shapes,
+    annotations: [...annotations, sampleAnnotation],
+  };
+
+  return { traces, layout };
+}
+
+function SBS384(data, title = '') {
+  const colors = sbsColor;
+
+  const groupByMutation = data.reduce((groups, e, i) => {
+    const mutation = e.mutationType.substring(2, e.mutationType.length);
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+  const flatSorted = Object.values(groupByMutation).flat();
+
+  //group data by 1st letter
+
+  const dataT = [];
+  const dataU = [];
+
+  Object.entries(flatSorted).forEach(([key, value], groupIndex, array) => {
+    if (value.mutationType.substring(0, 1) === 'T') {
+      dataT.push(value);
+    } else if (value.mutationType.substring(0, 1) === 'U') {
+      dataU.push(value);
+    }
+  });
+
+  [...dataT, ...dataU].reduce(
+    (a, e) => a + parseInt(e.contribution),
+    0
+  );
+
+  const dataUT = [...dataT, ...dataU];
+  const maxVal = Math.max(...dataUT.map((o) => o.contribution));
+
+  const groupByMutationU = dataU.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType.substring(2, e.mutationType.length),
+      contribution: e.contribution,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const flatSortedU = Object.values(groupByMutationU)
+    .flat()
+    .sort((a, b) =>
+      a.mutationType
+        .substring(0, 5)
+        .localeCompare(b.mutationType.substring(0, 5))
+    )
+    .sort((a, b) =>
+      a.mutationType
+        .substring(2, 5)
+        .localeCompare(b.mutationType.substring(2, 5))
+    );
+
+  const groupByMutationT = dataT.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType.substring(2, e.mutationType.length),
+      contribution: e.contribution,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const flatSortedT = Object.values(groupByMutationT)
+    .flat()
+    .sort((a, b) =>
+      a.mutationType
+        .substring(0, 5)
+        .localeCompare(b.mutationType.substring(0, 5))
+    )
+    .sort((a, b) =>
+      a.mutationType
+        .substring(2, a.mutationType.length)
+        .localeCompare(b.mutationType.substring(2, a.mutationType.length))
+    )
+    .sort((a, b) =>
+      a.mutationType
+        .substring(0, 5)
+        .localeCompare(b.mutationType.substring(0, 5))
+    )
+    .sort((a, b) =>
+      a.mutationType
+        .substring(2, 5)
+        .localeCompare(b.mutationType.substring(2, 5))
+    );
+
+  const tracesT = {
+    name: 'Transcrribed Strand',
+    type: 'bar',
+    marker: { color: '#004765' },
+    x: flatSortedT.map((element, index, array) => index),
+    y: flatSortedT.map((element, index, array) => element.contribution),
+    hovertemplate: '<b>Transcrribed</b><br>%{x}, %{y} <extra></extra>',
+    //hoverinfo: 'x+y',
+    showlegend: true,
+  };
+
+  const tracesU = {
+    name: 'Untranscribed Strand',
+    type: 'bar',
+    marker: { color: '#E32925' },
+    x: flatSortedU.map((element, index, array) => index),
+    y: flatSortedU.map((element, index, array) => element.contribution),
+    hovertemplate: '<b>Untranscribed Strand</b><br>%{x}, %{y} <extra></extra>',
+    //hoverinfo: 'x+y',
+    showlegend: true,
+  };
+
+  const traces = [tracesT, tracesU];
+
+  const annotations = Object.entries(groupByMutationT).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      xref: 'x',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x:
+        array
+          .slice(0, groupIndex)
+          .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) +
+        (signatures.length - 1) * 0.5,
+      y: 1.04,
+      text: `<b>${mutation}</b>`,
+      showarrow: false,
+      font: {
+        size: 18,
+      },
+      align: 'center',
+    })
+  );
+
+  const sampleAnnotation = createSampleAnnotation(data);
+
+  const shapes1 = Object.entries(groupByMutationT).map(
+    ([mutation, _], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y0: 1.05,
+      y1: 1.01,
+      fillcolor: colors[mutation],
+      line: {
+        width: 0,
+      },
+      mutation: mutation,
+    })
+  );
+  const shapes2 = Object.entries(groupByMutationT).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      y0: 1,
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y1: 0,
+      fillcolor: colors[mutation],
+      line: {
+        width: 0,
+      },
+      opacity: 0.15,
+    })
+  );
+
+  const transformU = Object.entries(groupByMutationU).map(
+    ([mutation, data]) => ({
+      mutation,
+      data,
+    })
+  );
+
+  const mutationTypeNames = transformU
+    .map((group) =>
+      group.data.map((e) => ({
+        mutation: group.mutation,
+        mutationType: e.mutationType,
+      }))
+    )
+    .flat();
+
+  function formatTickLabel(mutation, mutationType) {
+    const color = colors[mutation];
+    const regex = /^(.)\[(.).{2}\](.)$/;
+    const match = mutationType.match(regex);
+    return `${match[1]}<span style="color:${color}"><b>${match[2]}</b></span>${match[3]}`;
+  }
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    bargap: 0.3,
+    height: 450,
+    //width:1080,
+    autosize: true,
+    legend: {
+      x: 1,
+      xanchor: 'right',
+      y: 1,
+      bgcolor: '#FFFFFF',
+      bordercolor: '#E1E1E1',
+      borderwidth: 1,
+    },
+
+    xaxis: {
+      showticklabels: true,
+      showline: true,
+      tickangle: -90,
+      tickfont: {
+        family: 'Courier New, monospace',
+        color: '#A0A0A0',
+      },
+      tickmode: 'array',
+      tickvals: mutationTypeNames.map((_, i) => i),
+      ticktext: mutationTypeNames.map((e) =>
+        formatTickLabel(e.mutation, e.mutationType)
+      ),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+    },
+    yaxis: {
+      title: {
+        text: '<b>Number of Single Base Substitutions</b>',
+        font: {
+          family: 'Times New Roman',
+        },
+      },
+      autorange: false,
+      range: [0, maxVal + maxVal * 0.2],
+      tickcolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      categoryorder: 'category descending',
+    },
+    shapes: [...shapes1, ...shapes2],
+    annotations: [...annotations, sampleAnnotation],
+  };
+
+  return { traces, layout };
+}
+
+function SBS1536(data, title = '') {
+  const colors = sbsColor;
+
+  const heatmapColorscale = [
+    [0, 'rgb(56,56,156'],
+    [0.2, 'rgb(56,56,156'],
+    [0.2, 'rgb(106,106,128'],
+    [0.4, 'rgb(106,106,128'],
+    [0.4, 'rgb(155,146,98'],
+    [0.6, 'rgb(155,146,98'],
+    [0.6, 'rgb(205,186,69'],
+    [0.8, 'rgb(205,186,69'],
+    [0.8, 'rgb(255,255,39)'],
+    [1, 'rgb(255,255,39)'],
+  ];
+
+  const totalMutations = data.reduce((a, e) => a + parseInt(e.mutations), 0);
+  const chunks = (a, size) =>
+    Array.from(new Array(Math.ceil(a.length / size)), (_, i) =>
+      a.slice(i * size, i * size + size)
+    );
+
+  // const maxValMutation = Math.max(...data.map((o) => o.mutations));
+  // console.log("maxValMutation:---");
+  // console.log(maxValMutation);
+
+  const groupByMutationInner = data.reduce((groups, e, i) => {
+    const mutation = e.mutationType.substring(1, 8);
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const groupByMutationOuter = data.reduce((groups, e, i) => {
+    const mutation =
+      e.mutationType[0] + e.mutationType[e.mutationType.length - 1];
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  /////---------------- Bar Chart ---------------------------------////
+
+  const totalMutationsGroup = Object.entries(groupByMutationInner).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      mutationType: mutation,
+      signatures: signatures,
+      total: signatures.reduce((a, e) => a + parseInt(e.contribution), 0),
+    })
+  );
+
+  const groupByTotal = totalMutationsGroup.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.total,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const flatSorted = Object.values(groupByTotal).flat();
+  //const mutationTitle = Object.keys(groupByTotal).flat();
+
+  const maxVal = Math.max(...flatSorted.map((o) => o.contribution));
+
+  const tracesBar = Object.entries(groupByTotal).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      name: mutation,
+      type: 'bar',
+      marker: { color: colors[mutation] },
+      //   x: signatures.map((e) => e.mutationType),
+      //x: signatures.map((e, i) => groupIndex * signatures.length + i),
+      x: signatures.map(
+        (e, i) =>
+          array
+            .slice(0, groupIndex)
+            .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+      ),
+      y: signatures.map((e) => e.contribution),
+      hoverinfo: 'x+y',
+      showlegend: false,
+    })
+  );
+
+  ////// ------- Heat Map 1 -----////
+  const heatmapY2 = [];
+  const heatmapZ2 = [];
+  const heatmapX2 = [];
+
+  const groupByMutationFront = data.reduce((groups, e, i) => {
+    const mutation = e.mutationType.substring(0, e.mutationType.length - 1);
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const mutationSumFront = Object.entries(groupByMutationFront).map(
+    ([key, value]) => ({
+      mutationType: key,
+      contribution: value.reduce((a, e) => a + parseInt(e.contribution), 0),
+    })
+  );
+
+  const arrayMutationSumFront = Object.values(mutationSumFront).flat();
+  const groupByMutation2 = arrayMutationSumFront.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.contribution,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  Object.entries(groupByMutation2).forEach(
+    ([key, value], groupIndex, array) => {
+      heatmapY2.push(Object.entries(value).map(([k, v]) => v.mutationType));
+      heatmapZ2.push(
+        Object.entries(value).map(([k, v]) => v.contribution / totalMutations)
+      );
+      heatmapX2.push(
+        value.map(
+          (e, i) =>
+            array
+              .slice(0, groupIndex)
+              .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+        )
+      );
+    }
+  );
+
+  let heatmapY2_c = [
+    heatmapY2[0][0].charAt(0) + '--N',
+    heatmapY2[0][16].charAt(0) + '--N',
+    heatmapY2[0][32].charAt(0) + '--N',
+    heatmapY2[0][48].charAt(0) + '--N',
+  ];
+
+  let heatMapZ2_0 = chunks(heatmapZ2[0], 16);
+  let heatMapZ2_1 = chunks(heatmapZ2[1], 16);
+  let heatMapZ2_2 = chunks(heatmapZ2[2], 16);
+  let heatMapZ2_3 = chunks(heatmapZ2[3], 16);
+  let heatMapZ2_4 = chunks(heatmapZ2[4], 16);
+  let heatMapZ2_5 = chunks(heatmapZ2[5], 16);
+
+  const heatMapZFinal2 = [
+    heatMapZ2_0,
+    heatMapZ2_1,
+    heatMapZ2_2,
+    heatMapZ2_3,
+    heatMapZ2_4,
+    heatMapZ2_5,
+  ];
+  const maxZ2 = Math.max(...heatMapZFinal2.flat(Infinity));
+  const traceHeatMap2 = heatMapZFinal2.map((num, index, array) => ({
+    colorbar: { len: 0.2, y: 0.625 },
+    colorscale: heatmapColorscale,
+    zmin: 0,
+    zmax: maxZ2 + maxZ2 * 0.1,
+    z: num,
+    y: heatmapY2_c,
+    type: 'heatmap',
+    hoverongaps: false,
+    xaxis: 'x',
+    yaxis: 'y2',
+    x: num.map(
+      (e, i) =>
+        array.slice(0, index).reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+    ),
+    xgap: 0.1,
+    ygap: 0.1,
+    hovertemplate: 'x: %{x}<br>y: %{y}<br>Value: %{z}<extra></extra>',
+  }));
+
+  ////// ------------------- Heat Map 2 --------------------------------////
+
+  const heatmapY3 = [];
+  const heatmapZ3 = [];
+  const heatmapX3 = [];
+  const groupByMutationBack = data.reduce((groups, e, i) => {
+    const mutation = e.mutationType.substring(1, e.mutationType.length);
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  // console.log("groupByMutationBack:---");
+  // console.log(groupByMutationBack);
+
+  const mutationSumBack = Object.entries(groupByMutationBack).map(
+    ([key, value]) => ({
+      mutationType: key,
+      contribution: value.reduce((a, e) => a + parseInt(e.contribution), 0),
+    })
+  );
+
+  // console.log("mutationsumBack:---");
+  // console.log(mutationsumBack);
+
+  // sort by the last letter
+  mutationSumBack.sort((a, b) =>
+    a.mutationType.substring(a.mutationType.length - 1, a.mutationType.length) <
+    b.mutationType.substring(b.mutationType.length - 1, b.mutationType.length)
+      ? -1
+      : b.mutationType.substring(
+          b.mutationType.length - 1,
+          b.mutationType.length
+        ) <
+        a.mutationType.substring(
+          a.mutationType.length - 1,
+          a.mutationType.length
+        )
+      ? 1
+      : 0
+  );
+
+  const arrayMutationSumBack = Object.values(mutationSumBack).flat();
+
+  const groupByMutation3 = arrayMutationSumBack.reduce((groups, e, i) => {
+    const mutationRegex = /\[(.*)\]/;
+    const mutation = e.mutationType.match(mutationRegex)[1];
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.contribution,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  Object.entries(groupByMutation3).forEach(
+    ([key, value], groupIndex, array) => {
+      heatmapY3.push(Object.entries(value).map(([k, v]) => v.mutationType));
+      heatmapZ3.push(
+        Object.entries(value).map(([k, v]) => v.contribution / totalMutations)
+      );
+      heatmapX3.push(
+        value.map(
+          (e, i) =>
+            array
+              .slice(0, groupIndex)
+              .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+        )
+      );
+    }
+  );
+
+  let heatmapY3_c = [
+    'N--' + heatmapY3[0][0].charAt(heatmapY3[0][0].length - 1),
+    'N--' + heatmapY3[0][16].charAt(heatmapY3[0][16].length - 1),
+    'N--' + heatmapY3[0][32].charAt(heatmapY3[0][32].length - 1),
+    'N--' + heatmapY3[0][48].charAt(heatmapY3[0][48].length - 1),
+  ];
+
+  let heatMapZ3_0 = chunks(heatmapZ3[0], 16);
+  let heatMapZ3_1 = chunks(heatmapZ3[1], 16);
+  let heatMapZ3_2 = chunks(heatmapZ3[2], 16);
+  let heatMapZ3_3 = chunks(heatmapZ3[3], 16);
+  let heatMapZ3_4 = chunks(heatmapZ3[4], 16);
+  let heatMapZ3_5 = chunks(heatmapZ3[5], 16);
+
+  const heatMapZFinal3 = [
+    heatMapZ3_0,
+    heatMapZ3_1,
+    heatMapZ3_2,
+    heatMapZ3_3,
+    heatMapZ3_4,
+    heatMapZ3_5,
+  ];
+
+  const maxZ3 = Math.max(...heatMapZFinal2.flat(Infinity));
+  const traceHeatMap3 = heatMapZFinal3.map((num, index, array) => ({
+    colorbar: { len: 0.2, y: 0.44 },
+    colorscale: heatmapColorscale,
+    zmin: 0,
+    zmax: maxZ3 + maxZ3 * 0.1,
+    z: num,
+    y: heatmapY3_c,
+    type: 'heatmap',
+    hoverongaps: false,
+    xaxis: 'x',
+    yaxis: 'y3',
+    x: num.map(
+      (e, i) =>
+        array.slice(0, index).reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+    ),
+    xgap: 0.1,
+    ygap: 0.1,
+    hovertemplate: 'x: %{x}<br>y: %{y}<br>Value: %{z}<extra></extra>',
+  }));
+  ////--------------------- Heat Map Total --------------------------//
+  const heatmapY = [];
+  const heatmapZ = [];
+  const heatmapX = [];
+
+  let heatMapZ0 = [];
+  let heatMapZ1 = [];
+  let heatMapZ2 = [];
+  let heatMapZ3 = [];
+  let heatMapZ4 = [];
+  let heatMapZ5 = [];
+
+  Object.entries(groupByMutationOuter).forEach(
+    ([key, value], groupIndex, array) => {
+      value.sort((a, b) =>
+        a.mutationType.substring(3, 6) < b.mutationType.substring(3, 6)
+          ? -1
+          : b.mutationType.substring(3, 6) < a.mutationType.substring(3, 6)
+          ? 1
+          : 0
+      );
+      //console.log(value);
+      heatmapY.push(key.charAt(0) + '--' + key.charAt(key.length - 1));
+
+      //console.log(totalMutations);
+      //console.log(value);
+      //console.log(Object.entries(value).map(([k, v]) => v.contribution));
+      heatmapZ.push(
+        Object.entries(value).map(([k, v]) => v.contribution / totalMutations)
+      );
+      heatmapX.push(
+        value.map(
+          (e, i) =>
+            array
+              .slice(0, groupIndex)
+              .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+        )
+      );
+    }
+  );
+
+  heatmapZ.forEach((item, index) => {
+    heatMapZ0.push(item.slice().splice(0, 16));
+    heatMapZ1.push(item.slice().splice(16, 16));
+    heatMapZ2.push(item.slice().splice(32, 16));
+    heatMapZ3.push(item.slice().splice(48, 16));
+    heatMapZ4.push(item.slice().splice(64, 16));
+    heatMapZ5.push(item.slice().splice(80, 16));
+  });
+
+  const heatMapZFinal = [
+    heatMapZ0,
+    heatMapZ1,
+    heatMapZ2,
+    heatMapZ3,
+    heatMapZ4,
+    heatMapZ5,
+  ];
+
+  const maxZ = Math.max(...heatMapZFinal.flat(Infinity));
+  const traceHeatMap = heatMapZFinal.map((num, index, array) => ({
+    colorbar: { len: 0.38, y: 0.17 },
+    colorscale: heatmapColorscale,
+    zmin: 0,
+    zmax: maxZ + maxZ * 0.1,
+    z: num,
+    y: heatmapY,
+
+    type: 'heatmap',
+    hoverongaps: false,
+    xaxis: 'x',
+    yaxis: 'y4',
+    x: num.map(
+      (e, i) =>
+        array.slice(0, index).reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+    ),
+    test: heatmapY.map((a) => a.replace('--', `%{x}`)),
+    array: array,
+    num: num,
+    xgap: 0.1,
+    ygap: 0.1,
+    hovertemplate: 'x: %{x}<br>y: %{y}<br>Value: %{z}<extra></extra>',
+  }));
+
+  const traces = [
+    ...tracesBar,
+    ...traceHeatMap,
+    ...traceHeatMap2,
+    ...traceHeatMap3,
+  ];
+
+  //console.log('traces:');
+  //console.log(traces);
+  const annotations = Object.entries(groupByTotal).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      xref: 'x',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x:
+        array
+          .slice(0, groupIndex)
+          .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) +
+        (signatures.length - 1) * 0.5,
+      y: 1.04,
+      text: `<b>${mutation}</b>`,
+      showarrow: false,
+      font: {
+        size: 18,
+      },
+      align: 'center',
+    })
+  );
+
+  const sampleAnnotation = createSampleAnnotation(data, false, 0.95);
+
+  const shapes = Object.entries(groupByTotal).map(
+    ([mutation, _], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y0: 1.04,
+      y1: 1.01,
+      fillcolor: colors[mutation],
+      line: {
+        width: 0,
+      },
+    })
+  );
+
+  const xannotations = flatSorted.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x: index,
+    y: -0.04,
+    text: num.mutationType.replace(/\[(.*)\]/, '-'),
+    showarrow: false,
+    font: {
+      size: 7.5,
+      family: 'Courier New, monospace',
+    },
+    align: 'center',
+    num: num,
+    index: index,
+    textangle: -90,
+  }));
+
+  const yLabelAnnotation = {
+    xref: 'paper',
+    yref: 'paper',
+    xanchor: 'top',
+    yanchor: 'top',
+    x: -0.045,
+    y: 1.02,
+    text: '<b>Number of Single Base Substitutions</b>',
+    showarrow: false,
+    font: {
+      size: 10,
+      family: 'Times New Roman',
+    },
+    align: 'center',
+    textangle: -90,
+  };
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    height: 800,
+    width: 1080,
+    grid: {
+      rows: 4,
+      columns: 1,
+    },
+    xaxis: {
+      showticklabels: false,
+      showline: true,
+      tickangle: -90,
+      tickfont: {
+        family: 'Courier New, monospace',
+        size: 8,
+      },
+      tickmode: 'array',
+      tickvals: flatSorted.map((_, i) => i),
+      ticktext: flatSorted.map((e) => e.mutationType),
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      tickformat: maxVal > 1000 ? '~s' : '',
+      ticks: '',
+    },
+    yaxis: {
+      //title: 'Number of Single Base Substitutions',
+      autorange: false,
+      range: [0, maxVal + maxVal * 0.2],
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      domain: [0.72, 1],
+      tickformat: maxVal > 1000 ? '~s' : '',
+      tickfont: {
+        family: 'Courier New, monospace',
+        size: 8,
+      },
+      showgrid: true,
+      gridcolor: '#F5F5F5',
+    },
+    yaxis2: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      anchor: 'x',
+      domain: [0.54, 0.715],
+      tickfont: {
+        family: 'Courier New, monospace',
+        size: 8,
+      },
+    },
+    yaxis3: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      anchor: 'x',
+      tickfont: {
+        family: 'Courier New, monospace',
+        size: 8,
+      },
+      domain: [0.36, 0.535],
+    },
+    yaxis4: {
+      autorange: true,
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      ticks: '',
+      mirror: 'all',
+      anchor: 'x',
+      //dtick: 1,
+      tickfont: {
+        family: 'Courier New, monospace',
+        size: 8,
+      },
+      domain: [0, 0.35],
+    },
+
+    // autosize: false,
+    shapes: shapes,
+    annotations: [
+      ...annotations,
+      sampleAnnotation,
+      ...xannotations,
+      yLabelAnnotation,
+    ],
+  };
+  // console.log("layout");
+  //console.log(layout);
+
+  return { traces, layout };
+}
+
+function DBS78(apiData, title = '') {
+  const colors = dbs78Color;
+  const mutationRegex = /^(.{2})/;
+
+  const mutationGroupSort = (a, b) => {
+    const order = Object.keys(colors);
+    return order.indexOf(a.mutation) - order.indexOf(b.mutation);
+  };
+
+  const data = groupDataByMutation(apiData, mutationRegex, mutationGroupSort);
+  const maxMutation = getMaxMutations(apiData);
+  const totalMutations = getTotalMutations(apiData);
+  const mutationTypeNames = data
+    .map((group) => group.data.map((e) => e.mutationType.slice(-2)))
+    .flat();
+
+  const traces = data.map((group, groupIndex, array) => ({
+    name: group.mutation,
+    type: 'bar',
+    marker: { color: colors[group.mutation] },
+    x: [...group.data.keys()].map(
+      (e) =>
+        e +
+        array
+          .slice(0, groupIndex)
+          .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+    ),
+    y: group.data.map((e) => e.mutations || e.contribution),
+    hoverinfo: 'x+y',
+    showlegend: false,
+  }));
+
+  const sampleAnnotation = createSampleAnnotation(apiData);
+  const mutationAnnotation = createMutationAnnotations(data, '>NN');
+  const mutationShapes = createMutationShapes(data, colors);
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    height: 450,
+    //width:1080,
+    autosize: true,
+    xaxis: {
+      showline: true,
+      tickangle: -90,
+      tickfont: {
+        family: 'Courier New, monospace',
+        size: 14,
+      },
+      tickmode: 'array',
+      tickvals: mutationTypeNames.map((_, i) => i),
+      ticktext: mutationTypeNames.map((e) => e),
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: 'all',
+    },
+    yaxis: {
+      title: {
+        text:
+          parseFloat(totalMutations).toFixed(2) > 1
+            ? '<b>Number of Double Base Substitutions</b>'
+            : '<b>Percentage of Double Base Substitutions</b>',
+        font: {
+          family: 'Times New Roman',
+        },
+      },
+      autorange: false,
+      range: [0, maxMutation * 1.2],
+      linecolor: 'black',
+      linewidth: 1,
+      tickformat: parseFloat(totalMutations).toFixed(2) > 1 ? '~s' : '.1%',
+      ticks: 'inside',
+      tickcolor: '#D3D3D3',
+      showgrid: true,
+      mirror: 'all',
+      gridcolor: '#F5F5F5',
+    },
+
+    shapes: mutationShapes,
+    annotations: [...mutationAnnotation, sampleAnnotation],
+  };
+
+  return { traces, layout };
+}
+
+function DBS186(data, title = '') {
+  const colors = {
+    'CC>': '#09BCEE',
+    'CT>': '#A0CE63',
+    'TC>': '#FE9898',
+    'TT>': '#FE8002',
+  };
+
+  const arrayDataT = [];
+  const arrayDataU = [];
+
+  Object.values(data).forEach((group) => {
+    if (group.mutationType.substring(0, 1) === 'T') {
+      arrayDataT.push(group);
+    } else if (group.mutationType.substring(0, 1) === 'U') {
+      arrayDataU.push(group);
+    }
+  });
+
+  [...arrayDataT, ...arrayDataU].reduce(
+    (a, e) => a + parseInt(e.mutations),
+    0
+  );
+  const dataUT = [...arrayDataT, ...arrayDataU];
+
+  const maxVal = Math.max(...dataUT.map((o) => o.mutations));
+
+  // group data by dominant mutation
+  const T_groupByMutation = arrayDataT.reduce((groups, e, i) => {
+    const mutation = e.mutationType.substring(2, 4);
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const T_flatSorted = Object.values(T_groupByMutation).flat();
+
+  const tracesT = {
+    name: 'Transcrribed Strand',
+    type: 'bar',
+    marker: { color: '#004765' },
+    x: T_flatSorted.map((element, index, array) => index),
+    y: T_flatSorted.map((element, index, array) => element.contribution),
+    hovertemplate: '<b>Transcribed Strand</b><br>%{x}, %{y}<extra></extra>',
+    //hoverinfo: 'x+y',
+    showlegend: true,
+  };
+
+  const U_groupByMutation = arrayDataU.reduce((groups, e, i) => {
+    const mutation = e.mutationType.substring(2, 4);
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const U_flatSorted = Object.values(U_groupByMutation).flat();
+
+  const tracesU = {
+    name: 'Untranscribed Strand',
+    type: 'bar',
+    marker: { color: '#E32925' },
+    x: U_flatSorted.map((element, index, array) => index),
+    y: U_flatSorted.map((element, index, array) => element.contribution),
+    hovertemplate: '<b>Untranscribed Strand</b><br>%{x}, %{y}<extra></extra>',
+    //hoverinfo: 'x+y',
+    showlegend: true,
+  };
+
+  const traces = [tracesT, tracesU];
+
+  const annotations = Object.entries(T_groupByMutation).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      xref: 'x',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x:
+        array
+          .slice(0, groupIndex)
+          .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) +
+        (signatures.length - 1) * 0.5,
+      y: 1.04,
+      text: `<b>${mutation}>NN</b>`,
+      showarrow: false,
+      font: {
+        size: 18,
+      },
+      align: 'center',
+    })
+  );
+
+  const shapes1 = Object.entries(T_groupByMutation).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, signatures]) => x0 + signatures.length, -0.4),
+      // x0: groupIndex * 16 - 0.4,
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, signatures]) => x0 + signatures.length, -0.6),
+      // x1: groupIndex * 16 + signatures.length - 0.6,
+      y0: 1.05,
+      y1: 1.01,
+      fillcolor:
+        colors[
+          signatures[0].mutationType.substring(
+            2,
+            signatures[0].mutationType.length - 2
+          )
+        ],
+      line: {
+        width: 0,
+      },
+    })
+  );
+  const shapes2 = Object.entries(T_groupByMutation).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      y0: 1,
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y1: 0,
+      fillcolor:
+        colors[
+          signatures[0].mutationType.substring(
+            2,
+            signatures[0].mutationType.length - 2
+          )
+        ],
+      line: {
+        width: 0,
+      },
+      opacity: 0.15,
+    })
+  );
+
+  const sampleAnnotation = createSampleAnnotation(data);
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    showlegend: true,
+    height: 600,
+    //width:1080,
+    autosize: true,
+    legend: {
+      x: 1,
+      xanchor: 'right',
+      y: 1,
+      bgcolor: '#FFFFFF',
+      bordercolor: '#E1E1E1',
+      borderwidth: 1,
+    },
+    xaxis: {
+      showticklabels: true,
+      showline: true,
+      tickangle: -90,
+      tickfont: {
+        family: 'Courier New, monospace',
+        size: 22,
+      },
+      tickmode: 'array',
+      tickvals: T_flatSorted.map((_, i) => i),
+      ticktext: T_flatSorted.map((e) =>
+        e.mutationType.substring(
+          e.mutationType.length - 2,
+          e.mutationType.length
+        )
+      ),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+    },
+    yaxis: {
+      title: {
+        text: '<b>Number of Double Base Substitutions</b>',
+        font: {
+          family: 'Times New Roman',
+          size: 22,
+        },
+      },
+      autorange: false,
+      range: [0, maxVal + maxVal * 5],
+      ticks: 'inside',
+      linecolor: '#E0E0E0',
+      tickcolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      tickfont: {
+        size: 16,
+      },
+      showgrid: true,
+      gridcolor: '#F5F5F5',
+    },
+
+    shapes: [...shapes1, ...shapes2],
+    annotations: [...annotations, sampleAnnotation],
+  };
+
+  return { traces, layout };
+}
+
+function ID28(data, title = '') {
+  const colors = {
+    '1:Del:C': '#FBBD6F',
+    '1:Del:T': '#FE8002',
+    '1:Ins:C': '#AEDD8A',
+    '1:Ins:T': '#35A12E',
+    'o:': '#1764AA',
+  };
+  const annotationColors = {
+    '1:Del:C': 'black',
+    '1:Del:T': 'white',
+    '1:Ins:C': 'black',
+    '1:Ins:T': 'white',
+    'o:': '#1764AA',
+  };
+  const arrayIDAnnXTop = ['1bp Deletion', '1bp Insertion', '>1bp'],
+    arrayIDAnnXBot = ['Homopolymer Length', 'Homopolymer Length', 'Type'],
+    arrayIDAnnXLabel = [5, 17, 25],
+    arrayIDAnnotationTop = [],
+    arrayIDAnnotationBot = [];
+
+  data.reduce((a, e) => a + parseInt(e.mutations), 0);
+
+  const maxVal = Math.max(...data.map((o) => o.mutations));
+
+  const data1 = data.slice(0, data.length - 4);
+  const data2 = data.slice(-4);
+  //data2.push(data2.shift());
+
+  // group data by dominant mutation
+  const groupByMutation = data1.reduce((groups, e, i) => {
+    const mutationRegex = /^.{0,7}/;
+    const mutation = e.mutationType.match(mutationRegex)[0];
+
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  //console.log(groupByMutation);
+
+  const groupByFirstGroup = Object.fromEntries(
+    Object.entries(groupByMutation).slice(0, 4)
+  );
+
+  const arrayID1 = Object.keys(groupByFirstGroup).map(function (key) {
+    return groupByFirstGroup[key];
+  });
+
+  const arrayID2_Mod = data2.map((element) => ({
+    mutationType: 'o:' + element.mutationType,
+    contribution: element.mutations,
+  }));
+
+  const groupO = arrayID2_Mod.reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(0, 1));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+
+  const arrayID2 = Object.keys(groupO).map(function (key) {
+    return groupO[key];
+  });
+  const arrayID = [...arrayID1, ...arrayID2];
+  const flatSorted = Object.values(arrayID).flat();
+
+  Object.values(arrayID).forEach((group) => {
+    if (group.length > 1) {
+      arrayIDAnnotationTop.push(
+        group[Math.floor(group.length / 2)].mutationType
+      );
+    } else {
+      arrayIDAnnotationTop.push(group[0].mutationType);
+    }
+    group.forEach((e) => {
+      //arrayIDAnnotationBot.push(e.mutationType);
+      let lastNum = e.mutationType.substring(
+        e.mutationType.length - 1,
+        e.mutationType.length
+      );
+      let newNum;
+      if (e.mutationType.substring(0, 1) === 'o') {
+        newNum = e.mutationType;
+      } else {
+        if (e.mutationType.substring(2, 5) === 'Del') {
+          lastNum = +lastNum + 1;
+        }
+
+        if ((e.mutationType.substring(2, 5) === 'Del') & (+lastNum > 5)) {
+          newNum = lastNum + '+';
+        } else if (
+          (e.mutationType.substring(2, 5) !== 'Del') &
+          (+lastNum > 4)
+        ) {
+          newNum = lastNum + '+';
+        } else {
+          newNum = lastNum + '';
+        }
+      }
+
+      arrayIDAnnotationBot.push(newNum);
+    });
+  });
+
+  const traces = Object.entries(arrayID).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      name: mutation,
+      signature: signatures,
+      type: 'bar',
+      marker: {
+        color:
+          signatures[0].mutationType.substring(0, 1) === 'o'
+            ? '#1764AA'
+            : colors[
+                signatures[0].mutationType.substring(
+                  0,
+                  signatures[0].mutationType.length - 2
+                )
+              ],
+      },
+      x: signatures.map(
+        (e, i) =>
+          array
+            .slice(0, groupIndex)
+            .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) + i
+      ),
+      y: signatures.map((e) => e.contribution),
+      customdata: signatures.map((e) => ({
+        mutationType:
+          e.mutationType.substring(2, 5) === 'Del' ? 'Deletion' : 'Insertion',
+        xval:
+          e.mutationType.substring(2, 5) === 'Del'
+            ? +e.mutationType.slice(-1) + 1
+            : e.mutationType.slice(-1),
+      })),
+      hovertemplate: '%{y} indels<extra></extra>',
+      //hoverinfo: 'x+y',
+      showlegend: false,
+    })
+  );
+
+  const annotations1 = Object.entries(arrayID).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      xref: 'x',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x:
+        array
+          .slice(0, groupIndex)
+          .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) +
+        (signatures.length - 1) * 0.5,
+      y: 1.01,
+      text:
+        groupIndex < 4
+          ? `<b>${signatures[0].mutationType.substring(
+              signatures[0].mutationType.length - 3,
+              signatures[0].mutationType.length - 2
+            )}</b>`
+          : `<b>${signatures[0].mutationType.substring(0, 1)}</b>`,
+      showarrow: false,
+      font: {
+        size: 14,
+        color:
+          signatures[0].mutationType.substring(0, 1) === 'o'
+            ? '#1764AA'
+            : annotationColors[
+                signatures[0].mutationType.substring(
+                  0,
+                  signatures[0].mutationType.length - 2
+                )
+              ],
+      },
+      align: 'center',
+      signatures: signatures,
+      mutation: mutation,
+      groupIndex: groupIndex,
+    })
+  );
+  const annotations2 = arrayIDAnnotationBot.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x: index,
+    y: num.substring(0, 1) === 'o' ? -0.12 : -0.1,
+    xnum: parseInt(num.substring(num.length - 1, num.length)),
+    text:
+      num.substring(0, 1) === 'o'
+        ? num === 'o:complex'
+          ? '<b>comp</b>'
+          : num === 'o:MH'
+          ? '<b>MH</b>'
+          : '<b>' + num.substring(num.length - 3, num.length) + '</b>'
+        : '<b>' + num + '</b>',
+    showarrow: false,
+    font: {
+      size: num.substring(0, 1) === 'o' ? 11 : 14,
+    },
+    textangle: num.substring(0, 1) === 'o' ? -90 : 0,
+    align: 'center',
+    num: num,
+    index: index,
+  }));
+
+  const annotationsIDTopLabel = arrayIDAnnXLabel.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    x: num,
+    xanchor: 'bottom',
+    y: 1.07,
+    yanchor: 'bottom',
+    text: '<b>' + arrayIDAnnXTop[index] + '</b>',
+    showarrow: false,
+    font: {
+      size: 14,
+    },
+    align: 'center',
+  }));
+
+  const annotationsIDBotLabel = arrayIDAnnXLabel.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    x: num,
+    xanchor: 'bottom',
+    y: -0.16,
+    yanchor: 'bottom',
+    text: '<b>' + arrayIDAnnXBot[index] + '</b>',
+    showarrow: false,
+    font: {
+      size: 16,
+      family: 'Times New Roman',
+    },
+    align: 'center',
+  }));
+
+  const sampleAnnotation = createSampleAnnotation(data);
+
+  const shapes1 = Object.entries(arrayID).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y0: 1.07,
+      y1: 1.01,
+      fillcolor:
+        signatures[0].mutationType.substring(0, 1) === 'o'
+          ? '#1764AA'
+          : colors[
+              signatures[0].mutationType.substring(
+                0,
+                signatures[0].mutationType.length - 2
+              )
+            ],
+      line: {
+        width: 0,
+      },
+      mutation: mutation,
+      signature: signatures[0].mutationType.substring(
+        0,
+        signatures[0].mutationType.length - 2
+      ),
+    })
+  );
+
+  const shapes2 = Object.entries(arrayID).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y0: -0.01,
+      y1: -0.05,
+      fillcolor:
+        signatures[0].mutationType.substring(0, 1) === 'o'
+          ? '#1764AA'
+          : colors[
+              signatures[0].mutationType.substring(
+                0,
+                signatures[0].mutationType.length - 2
+              )
+            ],
+      line: {
+        width: 0,
+      },
+      mutation: mutation,
+      signature: signatures[0].mutationType.substring(
+        0,
+        signatures[0].mutationType.length - 2
+      ),
+    })
+  );
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    height: 600,
+    width: 750,
+    xaxis: {
+      showticklabels: false,
+      showline: true,
+      tickangle: -90,
+      tickfont: {
+        size: 10,
+      },
+      tickmode: 'array',
+      tickvals: flatSorted.map((_, i) => i),
+      ticktext: flatSorted.map((e) => e.mutationType),
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: true,
+    },
+    yaxis: {
+      title: {
+        text: '<b>Number of Indels</b>',
+        font: {
+          family: 'Times New Roman',
+          size: 20,
+        },
+      },
+      autorange: false,
+      range: [0, maxVal + maxVal * 0.25],
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: true,
+    },
+
+    shapes: [...shapes1, ...shapes2],
+    annotations: [
+      ...annotations1,
+      ...annotations2,
+      ...annotationsIDTopLabel,
+      ...annotationsIDBotLabel,
+      sampleAnnotation,
+    ],
+  };
+
+  return { traces, layout };
+}
+
+function ID29(apiData, title = '') {
+  const colors = {
+    '[+C]': '#0072b2',
+    '[+T]': '#d55e00',
+    '[+>1]': '#cc79a7',
+    '[-C]': '#56b4e9',
+    '[-T]': '#e69f00',
+    '[->1]': '#009e73',
+    '[-]': '#911eb4',
+  };
+  const mutationTypeSort = (a, b) => {
+    const mutationTypeOrder = [
+      'A',
+      'G',
+      'C',
+      'T',
+      'CC',
+      'TT',
+      'LR',
+      'NonR',
+      'Rep',
+      'MH',
+    ];
+    const mutationRegex = /\[.*\](.*)/;
+
+    return (
+      mutationTypeOrder.indexOf(a.mutationType.match(mutationRegex)[1]) -
+      mutationTypeOrder.indexOf(b.mutationType.match(mutationRegex)[1])
+    );
+  };
+  const groupRegex = /(\[.*\])/;
+
+  const mutationGroupSort = (a, b) => {
+    const order = Object.keys(colors);
+    return order.indexOf(a.mutation) - order.indexOf(b.mutation);
+  };
+
+  const data = groupDataByMutation(
+    apiData,
+    groupRegex,
+    mutationGroupSort,
+    mutationTypeSort
+  );
+  const maxMutation = getMaxMutations(apiData);
+
+  const mutationTypeNames = data
+    .map((group) =>
+      group.data.map((e) => ({
+        mutation: group.mutation,
+        mutationType: e.mutationType,
+      }))
+    )
+    .flat();
+
+  const traces = data.map((group, i, array) => ({
+    name: group.mutation,
+    type: 'bar',
+    marker: { color: colors[group.mutation] },
+    x: [...group.data.keys()].map(
+      (e) =>
+        e +
+        array.slice(0, i).reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+    ),
+    y: group.data.map((e) => e.mutations || e.contribution),
+    hoverinfo: 'x+y',
+    showlegend: false,
+  }));
+
+  const sampleAnnotation = createSampleAnnotation(apiData);
+  const mutationAnnotation = createMutationAnnotations(data);
+  const mutationShapes = createMutationShapes(data, colors);
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    bargap: 0.3,
+    height: 450,
+    // width: 1080,
+    autosize: true,
+
+    xaxis: {
+      showline: true,
+      tickangle: 45,
+      tickfont: {
+        family: 'Courier New, monospace',
+        // color: '#A0A0A0',
+      },
+      tickmode: 'array',
+      tickvals: mutationTypeNames.map((_, i) => i),
+      ticktext: mutationTypeNames.map((e) => `<b>${e.mutationType}</b>`),
+      linecolor: '#E0E0E0',
+      linewidth: 1,
+      mirror: 'all',
+    },
+    yaxis: {
+      title: {
+        text: '<b>Mutation Probability</b>',
+        font: {
+          family: 'Times New Roman',
+        },
+      },
+      autorange: false,
+      range: [0, maxMutation * 1.2],
+      ticks: 'inside',
+      tickcolor: '#D3D3D3',
+      linecolor: '#D3D3D3',
+      linewidth: 1,
+      mirror: 'all',
+      tickformat: Number.isInteger(traces[0].y[0]) ? '~s' : '.1%',
+      showgrid: true,
+      gridcolor: '#F5F5F5',
+    },
+
+    shapes: mutationShapes,
+    annotations: [...mutationAnnotation, sampleAnnotation],
+  };
+
+  return { traces, layout };
+}
+
+function ID83(apiData, title = '') {
+  const colors = id83Color;
+
+  const indelRegex = /^(.{7})/;
+  const mutationGroupSort = (a, b) => {
+    const order = Object.keys(colors);
+    return order.indexOf(a.mutation) - order.indexOf(b.mutation);
+  };
+
+  const data = groupDataByMutation(apiData, indelRegex, mutationGroupSort);
+
+  const arrayIDAnnXTop = [
+      '1bp Deletion',
+      '1bp Insertion',
+      '>1bp Deletion at Repeats<br>(Deletion Length)',
+      '>1bp Insertions at Repeats<br> (Insertion Length)',
+      'Microhomology<br>(Deletion Length)',
+    ],
+    arrayIDAnnXBot = [
+      'Homopolymer Length',
+      'Homopolymer Length',
+      'Number of Repeat Units',
+      'Number of Repeat Units',
+      'Microhomology Length',
+    ],
+    arrayIDAnnXLabel = [5, 18.5, 35, 60, 76];
+
+  const totalMutations = getTotalMutations(apiData);
+  const maxMutation = getMaxMutations(apiData);
+
+  const indelNames = data
+    .map((group) =>
+      group.data.map((e) => ({
+        indel: group.mutation,
+        index:
+          group.mutation.includes('Del') && group.mutation.slice(-1) != 'M'
+            ? +e.mutationType.slice(-1) + 1
+            : e.mutationType.slice(-1),
+      }))
+    )
+    .flat();
+
+  const traces = data.map((group, groupIndex, array) => ({
+    name: group.mutation,
+    type: 'bar',
+    marker: { color: colors[group.mutation].shape },
+    x: [...group.data.keys()].map(
+      (e) =>
+        e +
+        array
+          .slice(0, groupIndex)
+          .reduce((lastIndex, b) => lastIndex + b.data.length, 0)
+    ),
+    y: group.data.map((e) => e.mutations || e.contribution),
+    groupdata: group.data,
+    //customdata: group.data.map((e) => ({ mutationType: e.mutationType })),
+    customdata: group.data.map((e) => ({
+      mutationOrder: e.mutationType.substring(0, 1),
+      mutationType:
+        e.mutationType.substring(2, 5) === 'Del' ? 'Deletion' : 'Insertion',
+      extraValue: e.mutationType.substring(6, 7),
+      xval:
+        e.mutationType.substring(2, 5) === 'Del'
+          ? +e.mutationType.slice(-1) + 1
+          : e.mutationType.slice(-1),
+    })),
+    hovertemplate:
+      '<b>%{customdata.mutationOrder} bp %{customdata.mutationType}, %{customdata.extraValue}, %{customdata.xval}</b><br>' +
+      '%{y} indels<extra></extra>',
+    showlegend: false,
+  }));
+  const shapeAnnotations = data.map((group, groupIndex, array) => ({
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x:
+      array
+        .slice(0, groupIndex)
+        .reduce((lastIndex, b) => lastIndex + b.data.length, 0) +
+      (group.data.length - 1) * 0.5,
+    y: 1.01,
+    text: `<b>${
+      group.mutation[0] == '1' ? group.mutation.slice(-1) : group.mutation[0]
+    }</b>`,
+    showarrow: false,
+    font: {
+      size: 14,
+      color: colors[group.mutation].text,
+    },
+    align: 'center',
+  }));
+
+  const xLabelAnnotation = indelNames.map((indel, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x: index,
+    y: -0.1,
+    text: '<b>' + indel.index + '</b>',
+    showarrow: false,
+    font: {
+      size: 12,
+    },
+    align: 'center',
+  }));
+
+  const annotationsIDTopLabel = arrayIDAnnXLabel.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    x: num,
+    xanchor: 'bottom',
+    y: 1.07,
+    yanchor: 'bottom',
+    text: '<b>' + arrayIDAnnXTop[index] + '</b>',
+    showarrow: false,
+    font: {
+      size: 16,
+      family: 'Times New Roman',
+    },
+    align: 'center',
+  }));
+
+  const annotationsIDBotLabel = arrayIDAnnXLabel.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    x: num,
+    xanchor: 'bottom',
+    y: -0.15,
+    yanchor: 'bottom',
+    text: '<b>' + arrayIDAnnXBot[index] + '</b>',
+    showarrow: false,
+    font: {
+      size: 15,
+      family: 'Times New Roman',
+    },
+    align: 'center',
+  }));
+  const sampleAnnotation = createSampleAnnotation(apiData);
+
+  const topShapes = data.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.4),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.6),
+    y0: 1.07,
+    y1: 1.01,
+    fillcolor: colors[group.mutation].shape,
+    line: {
+      width: 0,
+    },
+  }));
+
+  const bottomShapes = data.map((group, groupIndex, array) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.4),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.6),
+    y0: -0.01,
+    y1: -0.05,
+    fillcolor: colors[group.mutation].shape,
+    line: {
+      width: 0,
+    },
+  }));
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    height: 500,
+    //width:1080,
+    autosize: true,
+    xaxis: {
+      showticklabels: false,
+      showline: true,
+      tickfont: { size: 11 },
+      tickmode: 'array',
+      tickvals: indelNames.map((_, i) => i),
+      ticktext: indelNames.map((e) => e.index),
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: 'all',
+    },
+    yaxis: {
+      title: {
+        text:
+          parseFloat(totalMutations).toFixed(2) > 1
+            ? '<b>Number of Indels</b>'
+            : '<b>Percent of Indels</b>',
+        font: {
+          family: 'Times New Roman',
+          size: 18,
+        },
+      },
+      autorange: false,
+      range: [0, maxMutation * 1.2],
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: true,
+      tickformat: parseFloat(totalMutations).toFixed(2) > 1 ? '~s' : '.1%',
+    },
+
+    shapes: [...topShapes, ...bottomShapes],
+    annotations: [
+      ...shapeAnnotations,
+      ...xLabelAnnotation,
+      ...annotationsIDTopLabel,
+      ...annotationsIDBotLabel,
+      sampleAnnotation,
+    ],
+  };
+
+  return { traces, layout };
+}
+
+function ID415(data, title = '') {
+  const colors = {
+    '1:Del:C': '#FBBD6F',
+    '1:Del:T': '#FE8002',
+    '1:Ins:C': '#AEDD8A',
+    '1:Ins:T': '#35A12E',
+    '2:Del:R': '#FCC9B4',
+    '3:Del:R': '#FB8969',
+    '4:Del:R': '#F04432',
+    '5:Del:R': '#BB1A1A',
+    '2:Ins:R': '#CFDFF0',
+    '3:Ins:R': '#93C3DE',
+    '4:Ins:R': '#4B97C7',
+    '5:Ins:R': '#1863AA',
+    '2:Del:M': '#E1E1EE',
+    '3:Del:M': '#B5B5D6',
+    '4:Del:M': '#8482BC',
+    '5:Del:M': '#62409A',
+  };
+  const annotationColors = {
+    '1:Del:C': 'black',
+    '1:Del:T': 'white',
+    '1:Ins:C': 'black',
+    '1:Ins:T': 'white',
+    '2:Del:R': 'black',
+    '3:Del:R': 'black',
+    '4:Del:R': 'black',
+    '5:Del:R': 'white',
+    '2:Ins:R': 'black',
+    '3:Ins:R': 'black',
+    '4:Ins:R': 'black',
+    '5:Ins:R': 'white',
+    '2:Del:M': 'blacl',
+    '3:Del:M': 'black',
+    '4:Del:M': 'black',
+    '5:Del:M': 'white',
+  };
+
+  const arrayIDAnnXTop = [
+      '1bp Deletion',
+      '1bp Insertion',
+      '>1bp Deletion at Repeats<br>(Deletion Length)',
+      '>1bp Insertions at Repeats<br> (Insertion Length)',
+      'Microhomology<br>(Deletion Length)',
+    ],
+    arrayIDAnnXBot = [
+      'Homopolymer Length',
+      'Homopolymer Length',
+      'Number of Repeat Units',
+      'Number of Repeat Units',
+      'Microhimology Length',
+    ],
+    arrayIDAnnXLabel = [5, 18.5, 35, 60, 76],
+    arrayIDAnnotationTop = [],
+    arrayIDAnnotationBot = [];
+
+  const transcribed = data.filter((e) => /^T:/.test(e.mutationType));
+  const untranscribed = data.filter((e) => /^U:/.test(e.mutationType));
+
+  transcribed.reduce((total, e) => total + e.mutations, 0) +
+    untranscribed.reduce((total, e) => total + e.mutations, 0);
+
+  const maxMutation = Math.max(
+    ...[
+      ...transcribed.map((e) => e.mutations),
+      ...untranscribed.map((e) => e.mutations),
+    ]
+  );
+
+  ///// --------- T Group ------------///////
+  const T_groupByMutation = transcribed.reduce((groups, e, i) => {
+    const mutationRegex = /^.{2,9}/;
+    const mutation = e.mutationType.match(mutationRegex)[0];
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const T_groupByFirstGroup = Object.fromEntries(
+    Object.entries(T_groupByMutation).slice(0, 4)
+  );
+
+  const T_groupByMutationID = transcribed.reduce((groups, e) => {
+    let mutationID;
+    mutationID = e.mutationType.match(
+      e.mutationType.substring(
+        e.mutationType.length - 3,
+        e.mutationType.length - 2
+      )
+    );
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutationID] = groups[mutationID]
+      ? [...groups[mutationID], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const T_groupR = T_groupByMutationID['R'].reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(4, 3));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+
+  const T_groupRDel = T_groupR['Del'].reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(0, 7));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+
+  const T_groupRIns = T_groupR['Ins'].reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(0, 7));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+
+  const T_groupM = T_groupByMutationID['M'].reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(0, 7));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+  const T_arrayID1 = Object.keys(T_groupByFirstGroup).map(function (key) {
+    return T_groupByFirstGroup[key];
+  });
+  const T_arrayID2 = Object.keys(T_groupRDel).map(function (key) {
+    return T_groupRDel[key];
+  });
+  const T_arrayID3 = Object.keys(T_groupRIns).map(function (key) {
+    return T_groupRIns[key];
+  });
+  const T_arrayID4 = Object.keys(T_groupM).map(function (key) {
+    return T_groupM[key];
+  });
+
+  const T_arrayID = [
+    ...T_arrayID1,
+    ...T_arrayID2,
+    ...T_arrayID3,
+    ...T_arrayID4,
+  ];
+
+  const T_flatSorted = Object.values(T_arrayID).flat();
+
+  ///// --------- U Group ------------///////
+  const U_groupByMutation = untranscribed.reduce((groups, e, i) => {
+    const mutationRegex = /^.{2,9}/;
+    const mutation = e.mutationType.match(mutationRegex)[0];
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutation] = groups[mutation]
+      ? [...groups[mutation], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const U_groupByFirstGroup = Object.fromEntries(
+    Object.entries(U_groupByMutation).slice(0, 4)
+  );
+
+  const U_groupByMutationID = untranscribed.reduce((groups, e) => {
+    let mutationID;
+    mutationID = e.mutationType.match(
+      e.mutationType.substring(
+        e.mutationType.length - 3,
+        e.mutationType.length - 2
+      )
+    );
+    const signature = {
+      mutationType: e.mutationType,
+      contribution: e.mutations,
+    };
+    groups[mutationID] = groups[mutationID]
+      ? [...groups[mutationID], signature]
+      : [signature];
+    return groups;
+  }, {});
+
+  const U_groupR = U_groupByMutationID['R'].reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(4, 3));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+
+  const U_groupRDel = U_groupR['Del'].reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(0, 7));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+
+  const U_groupRIns = U_groupR['Ins'].reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(0, 7));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+
+  const U_groupM = U_groupByMutationID['M'].reduce((r, a) => {
+    let m;
+    m = a.mutationType.match(a.mutationType.substr(0, 7));
+    const s = {
+      mutationType: a.mutationType,
+      contribution: a.contribution,
+    };
+    r[m] = r[m] ? [...r[m], a] : [s];
+    return r;
+  }, {});
+
+  const U_arrayID1 = Object.keys(U_groupByFirstGroup).map(function (key) {
+    return U_groupByFirstGroup[key];
+  });
+  const U_arrayID2 = Object.keys(U_groupRDel).map(function (key) {
+    return U_groupRDel[key];
+  });
+  const U_arrayID3 = Object.keys(U_groupRIns).map(function (key) {
+    return U_groupRIns[key];
+  });
+  const U_arrayID4 = Object.keys(U_groupM).map(function (key) {
+    return U_groupM[key];
+  });
+
+  const U_arrayID = [
+    ...U_arrayID1,
+    ...U_arrayID2,
+    ...U_arrayID3,
+    ...U_arrayID4,
+  ];
+  const U_flatSorted = Object.values(U_arrayID).flat();
+
+  //// ----------- plot ------------------//
+  const tracesT = {
+    name: 'Transcrribed Strand',
+    type: 'bar',
+    marker: { color: '#004765' },
+    customedata: T_flatSorted.map((e, i, a) => ({
+      mutationOrder: e.mutationType.substring(0, 1),
+      mutationType:
+        e.mutationType.substring(2, 5) === 'Del' ? 'Deletion' : 'Insertion',
+      extraValue: e.mutationType.substring(6, 7),
+      xval:
+        e.mutationType.substring(2, 5) === 'Del'
+          ? +e.mutationType.slice(-1) + 1
+          : e.mutationType.slice(-1),
+    })),
+    x: T_flatSorted.map((element, index, array) => index),
+    y: T_flatSorted.map((element, index, array) => element.contribution),
+    hovertemplate: '<b>Transcrribed Strand</b><br>%{y} indels <extra></extra>',
+    //hoverinfo: 'x+y',
+    showlegend: true,
+  };
+
+  const tracesU = {
+    name: 'Untranscribed Strand',
+    type: 'bar',
+    marker: { color: '#E32925' },
+    x: U_flatSorted.map((element, index, array) => index),
+    y: U_flatSorted.map((element, index, array) => element.contribution),
+    hovertemplate: '<b>Untranscribed Strand</b><br>%{y} indels <extra></extra>',
+    //hoverinfo: 'x+y',
+    showlegend: true,
+  };
+
+  Object.values(T_arrayID).forEach((group) => {
+    if (group.length > 1) {
+      arrayIDAnnotationTop.push(
+        group[Math.floor(group.length / 2)].mutationType
+      );
+    } else {
+      arrayIDAnnotationTop.push(group[0].mutationType);
+    }
+    group.forEach((e) => {
+      let lastNum = e.mutationType.substring(
+        e.mutationType.length - 1,
+        e.mutationType.length
+      );
+      let newNum;
+      if (
+        e.mutationType.substring(4, 9) === 'Del:C' ||
+        e.mutationType.substring(4, 9) === 'Del:T' ||
+        e.mutationType.substring(4, 9) === 'Del:R'
+      ) {
+        lastNum = +lastNum + 1;
+      }
+      if (
+        (e.mutationType.substring(4, 9) === 'Del:C' ||
+          e.mutationType.substring(4, 9) === 'Del:T' ||
+          e.mutationType.substring(4, 9) === 'Del:R') &
+        (+lastNum > 5)
+      ) {
+        newNum = lastNum + '+';
+      } else if (
+        e.mutationType.substring(4, 9) !== 'Del:C' &&
+        e.mutationType.substring(4, 9) !== 'Del:T' &&
+        e.mutationType.substring(4, 9) !== 'Del:R' &&
+        +lastNum > 4
+      ) {
+        newNum = lastNum + '+';
+      } else {
+        newNum = lastNum;
+      }
+      arrayIDAnnotationBot.push(newNum);
+    });
+  });
+
+  const traces = [tracesT, tracesU];
+
+  const annotations1 = Object.entries(T_arrayID).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      xref: 'x',
+      yref: 'paper',
+      xanchor: 'bottom',
+      yanchor: 'bottom',
+      x:
+        array
+          .slice(0, groupIndex)
+          .reduce((x0, [_, sigs]) => x0 + sigs.length, 0) +
+        (signatures.length - 1) * 0.5,
+      y: 1.01,
+      text:
+        groupIndex < 4
+          ? `<b>${signatures[0].mutationType.substring(
+              signatures[0].mutationType.length - 3,
+              signatures[0].mutationType.length - 2
+            )}</b>`
+          : `<b>${signatures[0].mutationType.substring(2, 3)}</b>`,
+      showarrow: false,
+      font: {
+        size: 14,
+        color:
+          annotationColors[
+            signatures[0].mutationType.substring(
+              2,
+              signatures[0].mutationType.length - 2
+            )
+          ],
+      },
+      align: 'center',
+    })
+  );
+
+  const annotations2 = arrayIDAnnotationBot.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x: index,
+    y: -0.1,
+    text: '<b>' + num + '</b>',
+    showarrow: false,
+    font: {
+      size: 12,
+      family: 'Times New Roman',
+    },
+    align: 'center',
+  }));
+
+  const annotationsIDTopLabel = arrayIDAnnXLabel.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    x: num,
+    xanchor: 'bottom',
+    y: 1.07,
+    yanchor: 'bottom',
+    text: '<b>' + arrayIDAnnXTop[index] + '</b>',
+    showarrow: false,
+    font: {
+      size: 16,
+      family: 'Times New Roman',
+    },
+    align: 'center',
+  }));
+
+  const annotationsIDBotLabel = arrayIDAnnXLabel.map((num, index) => ({
+    xref: 'x',
+    yref: 'paper',
+    x: num,
+    xanchor: 'bottom',
+    y: -0.15,
+    yanchor: 'bottom',
+    text: '<b>' + arrayIDAnnXBot[index] + '</b>',
+    showarrow: false,
+    font: {
+      size: 15,
+      family: 'Times New Roman',
+    },
+    align: 'center',
+  }));
+
+  const sampleAnnotation = createSampleAnnotation(data);
+
+  const shapes1 = Object.entries(T_arrayID).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y0: 1.07,
+      y1: 1.01,
+      fillcolor:
+        colors[
+          signatures[0].mutationType.substring(
+            2,
+            signatures[0].mutationType.length - 2
+          )
+        ],
+      line: {
+        width: 0,
+      },
+    })
+  );
+
+  const shapes2 = Object.entries(T_arrayID).map(
+    ([mutation, signatures], groupIndex, array) => ({
+      type: 'rect',
+      xref: 'x',
+      yref: 'paper',
+      x0: array
+        .slice(0, groupIndex)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.4),
+      x1: array
+        .slice(0, groupIndex + 1)
+        .reduce((x0, [_, sigs]) => x0 + sigs.length, -0.6),
+      y0: -0.01,
+      y1: -0.05,
+      fillcolor:
+        colors[
+          signatures[0].mutationType.substring(
+            2,
+            signatures[0].mutationType.length - 2
+          )
+        ],
+      line: {
+        width: 0,
+      },
+    })
+  );
+
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    height: 500,
+    width: 1100,
+    autosize: false,
+    legend: {
+      x: 1,
+      xanchor: 'right',
+      y: 1,
+      bgcolor: '#FFFFFF',
+      bordercolor: '#E1E1E1',
+      borderwidth: 1,
+    },
+    xaxis: {
+      showticklabels: false,
+      showline: true,
+      tickangle: -90,
+      tickfont: {
+        size: 10,
+      },
+      tickmode: 'array',
+      tickvals: T_flatSorted.map((_, i) => i),
+      ticktext: T_flatSorted.map((e) => e.mutationType),
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: true,
+    },
+    yaxis: {
+      title: {
+        text: '<b>Number of Indels</b>',
+        font: {
+          family: 'Times New Roman',
+          size: 18,
+        },
+      },
+      autorange: false,
+      range: [0, maxMutation + maxMutation * 0.2],
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: true,
+    },
+
+    shapes: [...shapes1, ...shapes2],
+    annotations: [
+      ...annotations1,
+      ...annotations2,
+      ...annotationsIDTopLabel,
+      ...annotationsIDBotLabel,
+      sampleAnnotation,
+    ],
+  };
+
+  return { traces, layout };
+}
+
+function RS32(apiData, title = '') {
+  const colors = rs32Color;
+
+  const maxMutation = Math.max(...apiData.map((indel) => indel.contribution));
+
+  var sortOrder = ['1-10Kb', '10-100Kb', '100Kb-1Mb', '1Mb-10Mb', '>10Mb']; // Declare a array that defines the order of the elements to be sorted.
+
+  const clusterd = [];
+  const nonClustered = [];
+  apiData.map((e) => {
+    if (e.mutationType.substring(0, 3) === 'non') {
+      nonClustered.push(e);
+    } else {
+      clusterd.push(e);
+    }
+  });
+
+  const groupByIndelCluster = clusterd.reduce((acc, e, i) => {
+    const indel = e.mutationType.substring(0, 13);
+
+    acc[indel] = acc[indel] ? [...acc[indel], e] : [e];
+    return acc;
+  }, {});
+
+  const groupByIndelNonCluster = nonClustered.reduce((acc, e, i) => {
+    const indel = e.mutationType.substring(0, 17);
+
+    acc[indel] = acc[indel] ? [...acc[indel], e] : [e];
+    return acc;
+  }, {});
+  const clusterGroup = Object.entries(groupByIndelCluster).map(
+    ([indel, data]) => ({
+      indel: indel,
+      data: data,
+    })
+  );
+
+  const nonClusterGroup = Object.entries(groupByIndelNonCluster).map(
+    ([indel, data]) => ({
+      indel: indel,
+      data: data,
+    })
+  );
+
+  const data = [...clusterGroup, ...nonClusterGroup];
+
+  const sortGroup1 = clusterGroup.map((element, index, array) => ({
+    mutation: element.mutation,
+    data: element.data.sort(function (a, b) {
+      return (
+        sortOrder.indexOf(a.mutationType.split('_')[2]) -
+        sortOrder.indexOf(b.mutationType.split('_')[2])
+      );
+    }),
+  }));
+
+  const sortedData1 = sortGroup1
+    .map((indel) => indel.data.map((e) => e))
+    .flat();
+
+  const sortGroup2 = nonClusterGroup.map((element, index, array) => ({
+    mutation: element.mutation,
+    data: element.data.sort(function (a, b) {
+      return (
+        sortOrder.indexOf(a.mutationType.split('_')[2]) -
+        sortOrder.indexOf(b.mutationType.split('_')[2])
+      );
+    }),
+  }));
+
+  const sortedData2 = sortGroup2
+    .map((indel) => indel.data.map((e) => e))
+    .flat();
+
+  const sortData = [...sortedData1, ...sortedData2];
+  const mutationTypeNames = sortData.map((group, i) => ({
+    mutationType: !group.mutationType.split('_')[2]
+      ? group.mutationType.split('_')[1]
+      : group.mutationType.split('_')[2],
+    index: i,
+  }));
+
+  const traces = sortData.map((group, groupIndex, array) => ({
+    group: group,
+    name: group.indel,
+    type: 'bar',
+    marker: {
+      color: colors[group.mutationType],
+      line: {
+        color: 'black',
+        width: 1,
+      },
+    },
+    x: [group.mutationType],
+    y: [group.contribution],
+    customdata: {
+      mutationType: group.mutationType,
+      contribution: group.contribution,
+    },
+    hoverinfo: 'x+y',
+    showlegend: false,
+  }));
+
+  const topShapes = data.map((group, groupIndex, array) => ({
+    group: group,
+    name: group.indel,
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    marker: {
+      color:
+        colors[
+          group.indel.substring(group.indel.length - 3, group.indel.length)
+        ],
+    },
+    x0: array
+      .slice(0, groupIndex)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.4),
+    x1: array
+      .slice(0, groupIndex + 1)
+      .reduce((lastIndex, e) => lastIndex + e.data.length, -0.6),
+    y0: 1.07,
+    y1: 1.01,
+    fillcolor:
+      colors[group.indel.substring(group.indel.length - 3, group.indel.length)],
+    line: {
+      width: 0,
+    },
+    showlegend: false,
+  }));
+
+  const topShapeAnnitations = data.map((group, groupIndex, array) => ({
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x:
+      array
+        .slice(0, groupIndex)
+        .reduce((lastIndex, b) => lastIndex + b.data.length, 0) +
+      (group.data.length - 1) * 0.5,
+    y: 1.01,
+    text:
+      group.indel.substring(group.indel.length - 3, group.indel.length) !==
+      'tra'
+        ? group.indel
+            .substring(group.indel.length - 3, group.indel.length)
+            .charAt(0)
+            .toUpperCase() +
+          group.indel
+            .substring(group.indel.length - 3, group.indel.length)
+            .slice(1)
+        : 'T',
+    showarrow: false,
+    font: {
+      size: 14,
+      color: 'white',
+    },
+    align: 'center',
+  }));
+  const topShapeCluster = {
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: -0.4,
+    x1: 15.4,
+    y0: 1.14,
+    y1: 1.08,
+    fillcolor: '#808080',
+    line: {
+      width: 0,
+    },
+  };
+  const topShapeClusterAnnotation = {
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x: 7.5,
+    y: 1.08,
+    text: `Clustered`,
+    showarrow: false,
+    font: {
+      size: 14,
+      color: 'white',
+    },
+    align: 'center',
+  };
+  const topShapeNonluster = {
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: 15.6,
+    x1: 31.4,
+    y0: 1.14,
+    y1: 1.08,
+    fillcolor: '#000000',
+    line: {
+      width: 0,
+    },
+  };
+  const topShapeNonClusterAnnotation = {
+    xref: 'x',
+    yref: 'paper',
+    xanchor: 'bottom',
+    yanchor: 'bottom',
+    x: 23.5,
+    y: 1.08,
+    text: `Non-Clustered`,
+    showarrow: false,
+    font: {
+      size: 14,
+      color: 'white',
+    },
+    align: 'center',
+  };
+  const separateLine = {
+    type: 'line',
+    xref: 'x',
+    yref: 'paper',
+    x0: 15.5,
+    x1: 15.5,
+    y0: 0,
+    y1: 1,
+    line: {
+      color: '#808080',
+      width: 1,
+    },
+  };
+  const sampleAnnotation = createSampleAnnotation(apiData);
+  const layout = {
+    title: `<b>${title}</b>`,
+    hoverlabel: { bgcolor: '#FFF' },
+    height: 500,
+    autosize: true,
+    xaxis: {
+      showticklabels: true,
+      showline: true,
+      tickangle: -90,
+      tickfont: { size: 11 },
+      tickmode: 'array',
+
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: 'all',
+      tickvals: mutationTypeNames.map((_, i) => i),
+      ticktext: mutationTypeNames.map((e) => e.mutationType),
+    },
+    yaxis: {
+      title: {
+        text: '<b>Percentage(%)</b>',
+        font: {
+          family: 'Times New Roman',
+          size: 18,
+        },
+      },
+      autorange: false,
+      range: [0, maxMutation * 1.25],
+      tickformat: ',.1%',
+      linecolor: 'black',
+      linewidth: 1,
+      mirror: true,
+    },
+
+    shapes: [...topShapes, topShapeCluster, topShapeNonluster, separateLine],
+    annotations: [
+      ...topShapeAnnitations,
+      topShapeClusterAnnotation,
+      topShapeNonClusterAnnotation,
+      sampleAnnotation,
+    ],
   };
 
   return { traces, layout };
@@ -895,7 +4227,7 @@ async function nnls(A, b, maxiter = 3 * A[0].length) {
   return { x, rnorm };
 }
 
-async function fetchURLAndCache(cacheName, url, ICGC = null) {
+async function fetchURLAndCache$1(cacheName, url, ICGC = null) {
   const isCacheSupported = "caches" in window;
   let matchedURL;
 
@@ -1249,7 +4581,7 @@ console.log(mutationalSignatures);
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature_options?
     source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&offset=0`;
     const cacheName = "getMutationalSignaturesOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   /**
@@ -1275,7 +4607,7 @@ Retrieves mutational signatures data from the specified endpoint and returns it 
     source=Reference_signatures&strategy=${genomeDataType}&profile=${mutationType}&matrix=96&signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
     const cacheName = "getMutationalSignaturesData";
     const unformattedData = await (
-      await fetchURLAndCache(cacheName, url)
+      await fetchURLAndCache$1(cacheName, url)
     ).json();
     extractMutationalSpectra(
       unformattedData,
@@ -1305,7 +4637,7 @@ console.log(summary);
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_signature_summary?signatureSetName=${signatureSetName}&limit=${numberofResults}&offset=0`;
     const cacheName = "getMutationalSignaturesSummary";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
   //#endregion
 
@@ -1332,7 +4664,7 @@ Retrieves mutational spectrum options from the mutational signatures API.
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum_options?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&offset=0&limit=${numberOfResults}`;
     const cacheName = "getMutationalSpectrumOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   /**
@@ -1366,7 +4698,7 @@ Retrieves mutational spectrum options from the mutational signatures API.
       let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
 
       let unformattedData = await (
-        await fetchURLAndCache(cacheName, url)
+        await fetchURLAndCache$1(cacheName, url)
       ).json();
 
       return unformattedData;
@@ -1376,7 +4708,7 @@ Retrieves mutational spectrum options from the mutational signatures API.
       let url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&profile=${mutationType}&matrix=${matrixSize}&offset=0`;
 
       let unformattedData = await (
-        await fetchURLAndCache(cacheName, url)
+        await fetchURLAndCache$1(cacheName, url)
       ).json();
       extractMutationalSpectra(unformattedData, "sample");
       return unformattedData;
@@ -1389,7 +4721,7 @@ Retrieves mutational spectrum options from the mutational signatures API.
     }
 
     urls.forEach((url) => {
-      promises.push(fetchURLAndCache(cacheName, url));
+      promises.push(fetchURLAndCache$1(cacheName, url));
     });
 
     const results = await Promise.all(promises);
@@ -1427,7 +4759,7 @@ Fetches the mutational spectrum summary from the mutational signatures API based
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/mutational_spectrum_summary?study=${study}&cancer=${cancerType}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
     const cacheName = "getMutationalSpectrumSummary";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   //#endregion
@@ -1454,7 +4786,7 @@ Fetches the mutational signature association options from the API endpoint
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_association_options?study=${study}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
     const cacheName = "getMutationalSignatureAssociationOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   /**
@@ -1478,7 +4810,7 @@ Retrieves mutational signature association data from a specified cancer study us
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_association?study=${study}&strategy=${genomeDataType}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
     const cacheName = "getMutationalSignatureAssociationData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   //#endregion
@@ -1503,7 +4835,7 @@ Retrieves a list of mutational signature activity options from the mutational si
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity_options?study=${study}&strategy=${genomeDataType}&limit=${numberOfResults}&offset=0`;
     const cacheName = "getMutationalSignatureActivityOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
   /**
 
@@ -1528,7 +4860,7 @@ Retrieves mutational signature landscape data from the mutational-signatures API
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity?study=${study}&strategy=${genomeDataType}&signatureSetName=${signatureSetName}&limit=${numberOfResults}&cancer=${cancerType}&offset=0`;
     const cacheName = "getMutationalSignatureActivityData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   /**
@@ -1552,7 +4884,7 @@ Retrieves mutational signature landscape data from an API endpoint.
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_activity?study=${study}&strategy=${genomeDataType}&signatureSetName=${signatureSetName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
     const cacheName = "getMutationalSignatureLandscapeData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   //#endregion
@@ -1588,7 +4920,7 @@ cancer_type: The cancer type.
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_etiology_options?study=${study}&strategy=${genomeDataType}&signatureName=${signatureName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
     const cacheName = "getMutationalSignatureEtiologyOptions";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   /**
@@ -1613,7 +4945,7 @@ Retrieves mutational signature etiology data from the Cancer Genomics Research L
   ) {
     const url = `https://analysistools-dev.cancer.gov/mutational-signatures/api/signature_etiology?study=${study}&strategy=${genomeDataType}&signatureName=${signatureName}&cancer=${cancerType}&limit=${numberOfResults}&offset=0`;
     const cacheName = "getMutationalSignatureEtiologyData";
-    return await (await fetchURLAndCache(cacheName, url)).json();
+    return await (await fetchURLAndCache$1(cacheName, url)).json();
   }
 
   //#endregion
@@ -1805,14 +5137,26 @@ Renders a plot of the mutational spectra for one or more patients in a given div
   async function plotPatientMutationalSpectrum(
     mutationalSpectra,
     matrixSize = 96,
+    mutationType = "SBS",
     divID = "mutationalSpectrumMatrix"
   ) {
+    matrixSize = mutationalSpectra[0].length;
+
     const numberOfPatients = Object.keys(mutationalSpectra).length;
+
+    if (numberOfPatients == 1) {
+      mutationType = mutationalSpectra[0][0].profile;
+    }
+
     if (numberOfPatients == 0) {
       $(`#${divID}`).html(
         `<p style="color:red">Error: no data available for the selected parameters.</p>`
       );
-    } else if (numberOfPatients > 1) {
+    } else if (
+      numberOfPatients > 1 &&
+      matrixSize == 96 &&
+      mutationType == "SBS"
+    ) {
       const layout = {
         title: `Mutational Spectra for ${Object.keys(mutationalSpectra).join(
           ", "
@@ -1830,6 +5174,102 @@ Renders a plot of the mutational spectra for one or more patients in a given div
       }));
 
       Plotly.default.newPlot(divID, traces, layout);
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 96 &&
+      mutationType == "SBS"
+    ) {
+      let traces = SBS96(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 192 &&
+      mutationType == "SBS"
+    ) {
+      let traces = SBS192(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 288 &&
+      mutationType == "SBS"
+    ) {
+      let traces = SBS288(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 384 &&
+      mutationType == "SBS"
+    ) {
+      let traces = SBS384(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 1536 &&
+      mutationType == "SBS"
+    ) {
+      let traces = SBS1536(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 78 &&
+      mutationType == "DBS"
+    ) {
+      let traces = DBS78(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 186 &&
+      mutationType == "DBS"
+    ) {
+      let traces = DBS186(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 28 &&
+      mutationType == "ID"
+    ) {
+      let traces = ID28(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 29 &&
+      mutationType == "ID"
+    ) {
+      let traces = ID29(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 83 &&
+      mutationType == "ID"
+    ) {
+      let traces = ID83(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 415 &&
+      mutationType == "ID"
+    ) {
+      let traces = ID415(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
+    } else if (
+      numberOfPatients == 1 &&
+      matrixSize == 32 &&
+      mutationType == "RS"
+    ) {
+      let traces = RS32(mutationalSpectra[0]);
+      Plotly.default.newPlot(divID, traces.traces, traces.layout);
+      return traces;
     } else {
       let traces = [];
 
@@ -2332,34 +5772,34 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
       }
     }
     let reorderedData;
-    if (doubleCluster){
-    reorderedData = doubleClustering(
-      Object.values(dataset).map((data) => Object.values(data)),
-      Object.keys(dataset),
-      Object.keys(dataset[Object.keys(dataset)[0]])
-    );
-  }else {
-    console.log('data is not ordered');
-    reorderedData = {
-      matrix: Object.values(dataset).map((data) => Object.values(data)),
-      rowNames: Object.keys(dataset),
-      colNames: Object.keys(dataset[Object.keys(dataset)[0]]),
-    };
-  }
-  if (colorscale == "custom"){
-    colorscale = [
-      ['0.0', 'rgb(49,54,149)'],
-      ['0.025', 'rgb(69,117,180)'],
-      ['0.05', 'rgb(116,173,209)'],
-      ['0.075', 'rgb(171,217,233)'],
-      ['0.1', 'rgb(224,243,248)'],
-      ['0.125', 'rgb(254,224,144)'],
-      ['0.15', 'rgb(253,174,97)'],
-      ['0.175', 'rgb(244,109,67)'],
-      ['0.2', 'rgb(215,48,39)'],
-      ['1.0', 'rgb(165,0,38)'],
-    ];
-  }
+    if (doubleCluster) {
+      reorderedData = doubleClustering(
+        Object.values(dataset).map((data) => Object.values(data)),
+        Object.keys(dataset),
+        Object.keys(dataset[Object.keys(dataset)[0]])
+      );
+    } else {
+      console.log("data is not ordered");
+      reorderedData = {
+        matrix: Object.values(dataset).map((data) => Object.values(data)),
+        rowNames: Object.keys(dataset),
+        colNames: Object.keys(dataset[Object.keys(dataset)[0]]),
+      };
+    }
+    if (colorscale == "custom") {
+      colorscale = [
+        ["0.0", "rgb(49,54,149)"],
+        ["0.025", "rgb(69,117,180)"],
+        ["0.05", "rgb(116,173,209)"],
+        ["0.075", "rgb(171,217,233)"],
+        ["0.1", "rgb(224,243,248)"],
+        ["0.125", "rgb(254,224,144)"],
+        ["0.15", "rgb(253,174,97)"],
+        ["0.175", "rgb(244,109,67)"],
+        ["0.2", "rgb(215,48,39)"],
+        ["1.0", "rgb(165,0,38)"],
+      ];
+    }
 
     let data = {
       z: reorderedData.matrix,
@@ -2440,7 +5880,6 @@ Plot the mutational signature exposure data for the given dataset using Plotly h
     fitMutationalSpectraToSignatures,
     plotPatientMutationalSignaturesExposure,
     plotDatasetMutationalSignaturesExposure,
-    plotMutationalProfile: SBS96,
   };
 })();
 
